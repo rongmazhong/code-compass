@@ -15,7 +15,7 @@ description: |
 
 - 用户运行 `code-compass dev [name]` 或 `code-compass develop [name]`
 - 用户说"开始实现"、"按 spec 开发"
-- `.harness/state/workflow-state.json` 的 `stage` 为 `planned` / `product-analysis`
+- `.harness/state/workflow-state.json` 的 `stage` 为 `planned` 或 `product-analysis`
 
 ## 阶段前置
 

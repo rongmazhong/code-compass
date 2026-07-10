@@ -145,13 +145,14 @@ cmd_product_analysis() {
   cat <<EOF
 
 ✅ 已创建变更工作区: .harness/openspec/changes/$slug/
-   - proposal.md  (为什么做)
-   - tasks.md     (实现步骤)
-   - specs/       (能力 spec delta，待 product-analysis 阶段填充)
+   - proposal.md  (Why：意图/档位/决策)
+   - tasks.md     (实施计划，步骤 8 填充)
+   - specs/       (能力 spec delta，步骤 6 生成)
 
-下一步：请 agent 加载 skills/product-analysis/SKILL.md，按"柏拉图式发问"流程
-与用户确认需求范围，并将结论写入上述文件。完成后运行:
-   code-compass dev $slug
+下一步：请 agent 加载 skills/product-analysis/SKILL.md，按"八步流程"推进：
+   1.需求诊断 → 2.并行探索 → 3.澄清发问 → 4.对抗验证+方案
+   → 5.展示设计 → 6.生成 spec → 7.spec 自检对抗 → 8.交接计划
+   完成后运行:  code-compass dev $slug
 EOF
 }
 
