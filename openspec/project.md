@@ -1,6 +1,6 @@
 # Project Context
 
-> 本文件记录项目级上下文，供 design / dev 阶段快速了解背景。
+> 本文件记录项目级上下文，供 product-analysis / dev 阶段快速了解背景。
 > 由 `code-compass init` 生成，可自由补充。
 
 ## 项目简介

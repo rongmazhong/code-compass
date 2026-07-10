@@ -9,7 +9,7 @@ description: |
 # use-code-compass
 
 启用 code-compass 个人 skill 库的总开关。运行后，agent 即可通过 `skill` 工具
-加载 `init` / `design` / `dev` 等 skill，并根据其触发条件自动或按需调用。
+  加载 `init` / `product-analysis` / `dev` 等 skill，并根据其触发条件自动或按需调用。
 
 ## 触发条件
 
@@ -30,5 +30,5 @@ description: |
 
 - **superpowers**：本库的 skill 遵循其"方法论优先"原则（先理解再实现、TDD、系统化调试）
 - **gstack**：发布/审查阶段可调用 gstack 的 `/ship`、`review`、`codex` 等
-- **openspec**：`design` 产出的 spec 与 `dev` 消费的 spec 均存放于 `openspec/`
+- **openspec**：`product-analysis` 产出的 spec 与 `dev` 消费的 spec 均存放于 `openspec/`
 - **develop-workflow-rong**：`.harness/workflow-state.json` 复用其状态机思路做阶段编排

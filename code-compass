@@ -13,7 +13,7 @@
 # 子命令：
 #   use-code-compass   注册并启用本 skill 库（链接 skills 到 agent 的技能目录）
 #   init               在当前项目初始化 .harness/、docs/ 与 AGENTS.md
-#   design             进入柏拉图式发问，确定需求范围并生成 spec
+#   product-analysis  进入柏拉图式发问，确定需求范围并生成 spec
 #   dev|develop        基于 spec 进行开发实现
 #   wiki [topic]       更新/重建项目 wiki（docs/ 概览/架构/模块/API + 索引）
 #   help               显示帮助
@@ -59,7 +59,7 @@ cmd_use() {
 ✅ code-compass 已启用。
 
 agent 现在可以通过以下方式触发 skill：
-  - 直接运行:  code-compass init | design | dev
+  - 直接运行:  code-compass init | product-analysis | dev
   - agent skill 工具: 加载 skills/<name>/SKILL.md（已软链到 $SKILLS_DIR）
 
 各 skill 触发条件见对应 SKILL.md 的 frontmatter description。
@@ -121,9 +121,9 @@ cmd_init() {
 }
 
 # ---------------------------------------------------------------------------
-# design : 柏拉图式发问 -> 需求范围 -> spec 文档
+# product-analysis : 柏拉图式发问 -> 需求范围 -> spec 文档
 # ---------------------------------------------------------------------------
-cmd_design() {
+cmd_product_analysis() {
   local name="${1:-}"
   [ -z "$name" ] && read -r -p "请输入本次变更名称 (kebab-case): " name
   [ -z "$name" ] && die "变更名称不能为空"
@@ -137,16 +137,16 @@ cmd_design() {
   cp "$CC_ROOT/templates/tasks.md"   "$change_dir/tasks.md"
 
   # 更新工作流状态
-  _set_stage "$slug" "design"
+  _set_stage "$slug" "product-analysis"
 
   cat <<EOF
 
 ✅ 已创建变更工作区: openspec/changes/$slug/
    - proposal.md  (为什么做)
    - tasks.md     (实现步骤)
-   - specs/       (能力 spec delta，待 design 阶段填充)
+   - specs/       (能力 spec delta，待 product-analysis 阶段填充)
 
-下一步：请 agent 加载 skills/design/SKILL.md，按"柏拉图式发问"流程
+下一步：请 agent 加载 skills/product-analysis/SKILL.md，按"柏拉图式发问"流程
 与用户确认需求范围，并将结论写入上述文件。完成后运行:
    code-compass dev $slug
 EOF
@@ -159,7 +159,7 @@ cmd_dev() {
   local slug="${1:-}"
   if [ -z "$slug" ]; then
     local latest; latest="$(ls -1 "$TARGET_DIR/openspec/changes" 2>/dev/null | tail -1)"
-    [ -z "$latest" ] && die "未找到任何变更，请先运行: code-compass design <name>"
+    [ -z "$latest" ] && die "未找到任何变更，请先运行: code-compass product-analysis <name>"
     slug="$latest"
     warn "未指定变更，自动选择最新一个: $slug"
   fi
@@ -338,10 +338,10 @@ EOF
 ## 标准工作流（code-compass 驱动）
 
 \`\`\`
-idea → design → planned → dev → implemented → qa → verified → reviewed → shipped
+idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → shipped
 \`\`\`
 
-1. **design**：运行 \`code-compass design <name>\`，柏拉图式发问确定需求范围，
+1. **product-analysis**：运行 \`code-compass product-analysis <name>\`，柏拉图式发问确定需求范围，
    产出 \`openspec/changes/<slug>/{proposal.md,tasks.md,specs/}\`。
 2. **dev**：运行 \`code-compass dev <name>\`，按 spec 进行
    计划拆解 → TDD（红-绿-重构）→ 子代理实现 → 验证。
@@ -669,21 +669,21 @@ code-compass —— 个人 skill 库 CLI
 用法:
   code-compass use-code-compass   注册并启用本 skill 库
   code-compass init               在当前项目初始化 .harness/ 与 AGENTS.md
-  code-compass design [name]      柏拉图式发问，确定需求范围并生成 spec
+  code-compass product-analysis [name]  柏拉图式发问，确定需求范围并生成 spec
   code-compass dev|develop [name] 基于 spec 进行开发实现
   code-compass wiki [topic]       更新/重建项目 wiki（docs/）
   code-compass help               显示本帮助
 
-环境变量:
-  CODE_COMPASS_SKILLS_DIR   agent 技能目录 (默认 ~/.agents/skills)
-  CODE_COMPASS_TARGET_DIR   目标项目目录   (默认 当前目录)
+ 环境变量:
+   CODE_COMPASS_SKILLS_DIR   agent 技能目录 (默认 ~/.agents/skills)
+   CODE_COMPASS_TARGET_DIR   目标项目目录   (默认 当前目录)
 EOF
 }
 
 case "$cmd" in
   use|use-code-compass) cmd_use "$@" ;;
   init)                  cmd_init "$@" ;;
-  design)                cmd_design "$@" ;;
+  product-analysis)      cmd_product_analysis "$@" ;;
   dev|develop)           cmd_dev "$@" ;;
   wiki)                  cmd_wiki "$@" ;;
   help|--help|-h)        cmd_help ;;

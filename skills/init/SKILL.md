@@ -37,7 +37,7 @@ description: |
    - `docs/modules.md`：核心模块（目录职责与边界）
    - `docs/api.md`：功能清单及 API 接口文档
 4. 向 `AGENTS.md` 注入 code-compass 路由段（用 `MARKER` 包裹，避免重复）：
-   - 说明四个命令：`use-code-compass` / `init` / `design` / `dev`
+    - 说明五个命令：`use-code-compass` / `init` / `product-analysis` / `dev` / `wiki`
    - 说明 `.harness/state/workflow-state.json` 的阶段含义
    - 说明 `.harness/rules/` 三文件为开发/审查须遵循的项目规则
 
@@ -52,7 +52,7 @@ description: |
 ```dot
 digraph cc {
   rankdir=LR;
-  idea -> design -> planned -> dev -> implemented -> qa -> verified -> reviewed -> shipped;
+  idea -> product-analysis -> planned -> dev -> implemented -> qa -> verified -> reviewed -> shipped;
 }
 
 ## 目录产出

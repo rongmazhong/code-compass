@@ -9,7 +9,7 @@
   "rules_dir": ".harness/rules",
   "stages": [
     "idea",
-    "design",
+    "product-analysis",
     "planned",
     "dev",
     "implemented",

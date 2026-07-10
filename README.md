@@ -26,7 +26,7 @@ chmod +x code-compass
 |------|------|
 | `code-compass use-code-compass` | 注册并启用 skill 库（将 `skills/` 软链到 agent 技能目录 `~/.agents/skills`，并确保目标项目已 `init`） |
 | `code-compass init` | 在当前项目初始化 `.harness/`（state + rules）、`openspec/` 骨架，并向 `AGENTS.md` 注入路由 |
-| `code-compass design [name]` | 柏拉图式（苏格拉底式）发问，确定需求范围，生成 OpenSpec 风格的 spec 文档 |
+| `code-compass product-analysis [name]` | 柏拉图式（苏格拉底式）发问，确定需求范围，生成 OpenSpec 风格的 spec 文档 |
 | `code-compass dev\|develop [name]` | 基于 spec 进行开发实现（计划 → TDD → 子代理 → 验证） |
 | `code-compass wiki [topic]` | 更新/重建项目 wiki（`docs/`：概览/架构/模块/API + 索引） |
 
@@ -35,7 +35,7 @@ chmod +x code-compass
 ```bash
 code-compass use-code-compass     # 启用库
 cd your-project && code-compass init
-code-compass design my-feature    # 发问 → openspec/changes/my-feature/
+code-compass product-analysis my-feature    # 发问 → openspec/changes/my-feature/
 code-compass dev my-feature       # 实现 → 推进 workflow-state
 ```
 
@@ -49,7 +49,7 @@ code-compass/
 ├── skills/                  # 各命令/能力的方法论（agent 可读）
 │   ├── use-code-compass/SKILL.md
 │   ├── init/SKILL.md
-│   ├── design/SKILL.md
+│   ├── product-analysis/SKILL.md
 │   └── dev/SKILL.md
 ├── harness/                 # init 注入目标项目的模板
 │   ├── AGENTS.md.harness
@@ -58,7 +58,7 @@ code-compass/
 ├── openspec/                # 本库自身的 spec 存储（兼作模板范例）
 │   ├── project.md
 │   └── README.md
-└── templates/              # design/dev 生成的文档模板
+└── templates/              # product-analysis/dev 生成的文档模板
     ├── proposal.md
     ├── tasks.md
     └── spec.md
@@ -90,7 +90,7 @@ your-project/
 `.harness/state/workflow-state.json` 记录进度，中断后可从断点续跑：
 
 ```
-idea → design → planned → dev → implemented → qa → verified → reviewed → shipped
+idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → shipped
 ```
 
 ## License

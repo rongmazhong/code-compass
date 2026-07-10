@@ -15,7 +15,7 @@ description: |
 
 - 用户运行 `code-compass dev [name]` 或 `code-compass develop [name]`
 - 用户说"开始实现"、"按 spec 开发"
-- `.harness/state/workflow-state.json` 的 `stage` 为 `planned` / `design`
+- `.harness/state/workflow-state.json` 的 `stage` 为 `planned` / `product-analysis`
 
 ## 阶段前置
 
@@ -52,7 +52,7 @@ CLI 已将 `stage` 置为 `dev`，并选定 `openspec/changes/<slug>/`。
 ## workflow-state 阶段链
 
 ```
-idea → design → planned → dev → implemented → qa → verified → reviewed → shipped
+idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → shipped
 ```
 
 每次阶段切换都必须更新 `.harness/state/workflow-state.json`，保证中断后可从断点续跑。

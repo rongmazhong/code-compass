@@ -16,5 +16,5 @@ openspec/
 
 ## 工作流
 
-1. `code-compass design <name>` → 发问收敛，写入 `changes/<slug>/`
+1. `code-compass product-analysis <name>` → 发问收敛，写入 `changes/<slug>/`
 2. `code-compass dev <name>` → 基于 spec 实现，推进 `.harness/state/workflow-state.json`

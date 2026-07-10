@@ -1,26 +1,26 @@
 ---
-name: design
+name: product-analysis
 description: |
   通过柏拉图式（苏格拉底式）发问确定产品需求范围，并生成 OpenSpec 风格的 spec 文档。
-  当用户运行 `code-compass design [name]`、或说"先做需求分析 / 设计一下 / 确定范围"时触发。
+   当用户运行 `code-compass product-analysis [name]`、或说"先做需求分析 / 设计一下 / 确定范围"时触发。
   融合 superpowers 的 brainstorming、gstack 的 office-hours 与 openspec 的 change 提案。
 ---
 
-# design —— 柏拉图式发问，确定需求范围
+# product-analysis —— 柏拉图式发问，确定需求范围
 
 目标不是立刻写代码，而是用一连串追问逼近"真正要解决的问题"，
 把模糊的意图收敛成一份可验证的 spec（存放于 `openspec/changes/<slug>/`）。
 
 ## 触发条件
 
-- 用户运行 `code-compass design [name]`
+- 用户运行 `code-compass product-analysis [name]`
 - 用户说"先设计一下"、"确定需求范围"、"这个功能怎么做"
 - `.harness/state/workflow-state.json` 的 `stage` 为 `idea`
 
 ## 阶段前置
 
 CLI 已创建 `openspec/changes/<slug>/`，含 `proposal.md` / `tasks.md` / `specs/`。
-本 skill 负责把对话结论填入这些文件，并将 `stage` 推进到 `design` → `planned`。
+本 skill 负责把对话结论填入这些文件，并将 `stage` 推进到 `product-analysis` → `planned`。
 
 ## 柏拉图式发问流程（一次只问一个）
 
@@ -62,4 +62,4 @@ CLI 已创建 `openspec/changes/<slug>/`，含 `proposal.md` / `tasks.md` / `spe
 - **superpowers.brainstorming**：探索上下文、提澄清问题、给 2-3 方案、构建设计
 - **gstack.office-hours**：六问逼出需求现实（status quo / 绝望细节 / 最窄切口）
 - **openspec**：`changes/<slug>/` 的 proposal + specs delta + tasks 三件套
-- **develop-workflow-rong**：design 完成后 `stage` 进入 `planned`，可由 dev 接续
+- **develop-workflow-rong**：product-analysis 完成后 `stage` 进入 `planned`，可由 dev 接续
