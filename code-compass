@@ -134,10 +134,11 @@ cmd_product_analysis() {
   [ -z "$slug" ] && die "无法从 '$name' 生成合法 slug"
 
   local change_dir="$TARGET_DIR/.harness/openspec/changes/$slug"
-  mkdir -p "$change_dir/specs"
+  mkdir -p "$change_dir/specs/<capability>"
 
   cp "$CC_ROOT/templates/proposal.md" "$change_dir/proposal.md"
   cp "$CC_ROOT/templates/tasks.md"   "$change_dir/tasks.md"
+  cp "$CC_ROOT/templates/spec.md"    "$change_dir/specs/<capability>/spec.md"
 
   # 更新工作流状态
   _set_stage "$slug" "product-analysis"
@@ -145,9 +146,9 @@ cmd_product_analysis() {
   cat <<EOF
 
 ✅ 已创建变更工作区: .harness/openspec/changes/$slug/
-   - proposal.md  (Why：意图/档位/决策)
-   - tasks.md     (实施计划，步骤 8 填充)
-   - specs/       (能力 spec delta，步骤 6 生成)
+   - proposal.md              (Why：意图/档位/决策)
+   - tasks.md                 (实施计划，步骤 8 填充)
+   - specs/<capability>/spec.md  (spec 模板，步骤 6 改名并填写)
 
 下一步：请 agent 加载 skills/product-analysis/SKILL.md，按"八步流程"推进：
    1.需求诊断 → 2.并行探索 → 3.澄清发问 → 4.对抗验证+方案

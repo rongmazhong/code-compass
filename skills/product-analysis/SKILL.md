@@ -79,12 +79,14 @@ CLI 已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.m
 
 ## 步骤 6 · 生成 spec（罗盘到正确目录）
 
-按 `templates/spec.md` 规范写入：
+工作区已由 CLI 预置 spec 模板 `specs/<capability>/spec.md`，按以下方式填写：
 
-1. **proposal.md**：填"问题本质 + 档位 + 决策记录 + 非目标 + 成功信号"。（Why）
-2. **specs/<capability>/spec.md**：`<capability>` 用 kebab-case；含 `## ADDED Requirements`，
+1. **重命名能力目录**：将 `specs/<capability>/` 改名为真实能力名（kebab-case，如 `specs/user-auth/`）。
+2. **填写 proposal.md**：填"问题本质 + 档位 + 决策记录 + 非目标 + 成功信号"。（Why）
+3. **填写 specs/<capability>/spec.md**：基于模板，写 `## ADDED Requirements`，
    每条 `### Requirement: <名称>` 写"系统 SHALL ..."，并附 `#### Scenario:`（正常 + 异常）。
-3. **tasks.md**：先写粗略框架，步骤 8 再细化为实施计划。
+   模板规范见本仓库 `templates/spec.md`（CLI 已复制一份到变更工作区）。
+4. **tasks.md**：先写粗略框架，步骤 8 再细化为实施计划。
 
 路径务必落在 `.harness/openspec/changes/<slug>/` 下对应文件。
 
