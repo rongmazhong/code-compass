@@ -31,7 +31,7 @@ description: |
 阶段链以 `.harness/config.json` 的 `stages` 为准，默认：
 
 ```
-idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → shipped
+idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → summary
 ```
 
 若项目未 `init`，提示先运行 `code-compass init`。
@@ -50,8 +50,8 @@ develop-workflow-rong 的阶段编排一一对应：
 | `implemented` | IMPLEMENTED 阶段：agent-browser 端到端 QA，修复后推进 `qa` |
 | `qa` | QA_PASSED 阶段：测试 + lint + 类型检查，推进 `verified` |
 | `verified` | VERIFIED 阶段：requesting-code-review，推进 `reviewed` |
-| `reviewed` | REVIEWED 阶段：review + codex 跨模型二审，推进 `shipped` |
-| `shipped` | SHIPPED 阶段：/ship 或 /land-and-deploy 合并部署 |
+| `reviewed` | REVIEWED 阶段：review + codex 跨模型二审，推进 `summary` |
+| `summary` | SUMMARY 阶段：总结文档并更新状态 |
 
 ## 断点续跑
 
