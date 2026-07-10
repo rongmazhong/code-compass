@@ -231,6 +231,177 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
+# status : 查看当前 workflow-state，并可选激活自动化流程
+# ---------------------------------------------------------------------------
+
+# 读取目标项目的阶段链（优先用 .harness/config.json，回退到内置默认）
+_stage_chain() {
+  local cfg="$TARGET_DIR/.harness/config.json"
+  [ -f "$cfg" ] || cfg="$CC_ROOT/harness/config.json"
+  local stages=""
+  if command -v python3 >/dev/null 2>&1; then
+    stages="$(python3 - "$cfg" <<'PY'
+import json, sys
+try:
+    print("\n".join(json.load(open(sys.argv[1])).get("stages", [])))
+except Exception:
+    print("")
+PY
+)"
+  fi
+  [ -z "$stages" ] && stages=$'idea\nproduct-analysis\nplanned\ndev\nimplemented\nqa\nverified\nreviewed\nshipped'
+  printf '%s\n' "$stages"
+}
+
+# 根据当前 stage 返回"激活自动化"所需的下一步动作说明（参考 develop-workflow-rong 编排）
+_stage_action() {
+  local st="$1"
+  case "$st" in
+    idea)
+      cat <<'ACT'
+  ▶ 下一步：运行 `code-compass product-analysis <name>` 进入需求分析。
+  ▶ agent 应加载 skills/product-analysis/SKILL.md，按柏拉图式发问收敛需求范围。
+ACT
+      ;;
+    product-analysis)
+      cat <<'ACT'
+  ▶ 当前：需求分析进行中。agent 应继续加载 skills/product-analysis/SKILL.md，
+    将对话结论写入 openspec/changes/<slug>/{proposal.md,specs/,tasks.md}，
+    完成后把 stage 推进到 planned，再运行 `code-compass dev <slug>`。
+ACT
+      ;;
+    planned)
+      cat <<'ACT'
+  ▶ 下一步：运行 `code-compass dev <slug>` 进入计划拆解与实现。
+  ▶ 参考 develop-workflow-rong 的 PLANNED→DEVELOPING 编排（writing-plans → TDD → 子代理）。
+ACT
+      ;;
+    dev)
+      cat <<'ACT'
+  ▶ 当前：开发进行中。agent 应加载 skills/dev/SKILL.md，按
+    计划拆解 → TDD（红-绿-重构）→ 子代理逐任务实现 → 验证 推进，
+    完成后把 stage 推进到 implemented。
+ACT
+      ;;
+    implemented)
+      cat <<'ACT'
+  ▶ 下一步：进入 QA。参考 develop-workflow-rong 的 IMPLEMENTED 阶段，
+    用 agent-browser 做端到端测试（页面加载 / 核心流程 / 响应式 / 错误边界），
+    修复后把 stage 推进到 qa。
+ACT
+      ;;
+    qa)
+      cat <<'ACT'
+  ▶ 下一步：QA 验证。参考 develop-workflow-rong 的 QA_PASSED 阶段，
+    运行测试套件 + lint + 类型检查，确认修复到位后推进到 verified。
+ACT
+      ;;
+    verified)
+      cat <<'ACT'
+  ▶ 下一步：代码审查。参考 develop-workflow-rong 的 VERIFIED 阶段，
+    加载 requesting-code-review 审查代码是否符合 spec，推进到 reviewed。
+ACT
+      ;;
+    reviewed)
+      cat <<'ACT'
+  ▶ 下一步：架构与跨模型二审。参考 develop-workflow-rong 的 REVIEWED 阶段，
+    加载 review + codex，完成后推进到 shipped。
+ACT
+      ;;
+    shipped)
+      cat <<'ACT'
+  ▶ 下一步：发布。参考 develop-workflow-rong 的 SHIPPED 阶段，
+    运行 /ship（或 /land-and-deploy）合并并部署，进入 deployed。
+ACT
+      ;;
+    *)
+      cat <<ACT
+  ▶ 未知阶段 "$st"，可手动编辑 .harness/state/workflow-state.json 的 stage 字段回到已知阶段。
+ACT
+      ;;
+  esac
+}
+
+cmd_status() {
+  local mode="${1:-}"
+  local state="$TARGET_DIR/.harness/state/workflow-state.json"
+
+  if [ ! -f "$state" ]; then
+    warn "未检测到 $state（项目尚未 init）。"
+    log "运行 'code-compass init' 初始化后再查看状态。"
+    if [ "$mode" = "activate" ] || [ "$mode" = "--activate" ]; then
+      log "你也可以立即激活自动化流程：从 IDEA 阶段开始需求分析。"
+    fi
+    return 1
+  fi
+
+  local stage spec branch updated
+  if command -v python3 >/dev/null 2>&1; then
+    local raw; raw="$(python3 - "$state" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+print(json.dumps({
+    "stage": d.get("stage",""),
+    "spec": d.get("spec",""),
+    "branch": d.get("branch",""),
+    "updated_at": d.get("updated_at",""),
+}, ensure_ascii=False))
+PY
+)"
+    stage="$(printf '%s' "$raw"   | python3 -c 'import json,sys;print(json.load(sys.stdin)["stage"])')"
+    spec="$(printf '%s' "$raw"    | python3 -c 'import json,sys;print(json.load(sys.stdin)["spec"])')"
+    branch="$(printf '%s' "$raw"  | python3 -c 'import json,sys;print(json.load(sys.stdin)["branch"])')"
+    updated="$(printf '%s' "$raw" | python3 -c 'import json,sys;print(json.load(sys.stdin)["updated_at"])')"
+  else
+    warn "未找到 python3，状态解析可能不完整。"
+    stage=""; spec=""; branch=""; updated=""
+  fi
+
+  local chain; chain="$(_stage_chain)"
+
+  # 渲染阶段链进度
+  local line="" cur_done=0
+  while IFS= read -r s; do
+    if [ "$s" = "$stage" ]; then
+      line="${line}🔵 ${s}"
+      cur_done=1
+    elif [ "$cur_done" -eq 0 ]; then
+      line="${line}✅ ${s}"
+    else
+      line="${line}⚪ ${s}"
+    fi
+    line="${line} → "
+  done <<< "$chain"
+  line="${line% → }"
+
+  cat <<EOF
+
+📊 code-compass 状态
+────────────────────────────
+  当前阶段 : ${stage:-（未知）}
+  关联 spec : ${spec:-（无）}
+  当前分支 : ${branch:-（无）}
+  更新时间 : ${updated:-（未知）}
+────────────────────────────
+  阶段链:
+  $line
+EOF
+
+  if [ "$mode" = "activate" ] || [ "$mode" = "--activate" ]; then
+    cat <<EOF
+
+🚀 激活自动化流程（参考 develop-workflow-rong 状态机）
+  当前阶段: ${stage:-idea}
+$(_stage_action "${stage:-idea}")
+  提示：agent 加载本步骤对应 skill，执行后将 stage 写入 workflow-state.json，
+  下次运行 'code-compass status activate' 即自动从断点续跑。
+EOF
+  else
+    log "运行 'code-compass status activate' 可查看当前阶段应执行的自动化动作。"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # 项目探测：读取目标项目特征，供 rules/ 生成使用
 # ---------------------------------------------------------------------------
 _detect_project() {
@@ -671,8 +842,9 @@ code-compass —— 个人 skill 库 CLI
   code-compass init               在当前项目初始化 .harness/ 与 AGENTS.md
   code-compass product-analysis [name]  柏拉图式发问，确定需求范围并生成 spec
   code-compass dev|develop [name] 基于 spec 进行开发实现
-  code-compass wiki [topic]       更新/重建项目 wiki（docs/）
-  code-compass help               显示本帮助
+   code-compass status [activate] 查看当前状态；activate 激活当前阶段自动化流程
+   code-compass wiki [topic]       更新/重建项目 wiki（docs/）
+   code-compass help               显示本帮助
 
  环境变量:
    CODE_COMPASS_SKILLS_DIR   agent 技能目录 (默认 ~/.agents/skills)
@@ -685,6 +857,7 @@ case "$cmd" in
   init)                  cmd_init "$@" ;;
   product-analysis)      cmd_product_analysis "$@" ;;
   dev|develop)           cmd_dev "$@" ;;
+  status)                cmd_status "$@" ;;
   wiki)                  cmd_wiki "$@" ;;
   help|--help|-h)        cmd_help ;;
   *)                     warn "未知命令: $cmd"; cmd_help; exit 1 ;;
