@@ -2,8 +2,8 @@
 name: dev
 description: |
   基于 OpenSpec 的 spec 文档进行开发实现。当用户运行 `code-compass dev [name]`、
-  或说"开始实现 / 按 spec 开发 / 进入开发阶段"时触发。融合 superpowers 的
-  writing-plans / TDD / subagent-driven-development 与 develop-workflow-rong 的状态机编排。
+  或说"开始实现 / 按 spec 开发 / 进入开发阶段"时触发。借鉴 superpowers / develop-workflow-rong 的方法论：
+  writing-plans / TDD / subagent-driven-development 与 develop-workflow-rong 的状态机编排；均为可选增强，已内化为自包含指引，非强制依赖。
 ---
 
 # dev / develop —— 基于 spec 的开发实现
@@ -58,6 +58,8 @@ idea → product-analysis → planned → dev → implemented → qa → verifie
 每次阶段切换都必须更新 `.harness/state/workflow-state.json`，保证中断后可从断点续跑。
 
 ## 与方法的对应
+
+> 以下为方法论**灵感来源**（可选增强，非强制依赖），均已内化为本 skill 的自包含指引。
 
 - **superpowers**：writing-plans / TDD / subagent-driven-development / systematic-debugging / verification-before-completion
 - **gstack**：QA 用 agent-browser；审查用 review + codex；发布用 /ship

@@ -4,8 +4,8 @@ description: |
   需求分析与设计命令。当用户运行 `code-compass product-analysis [name]`、或说
   "先做需求分析 / 设计一下 / 确定范围 / 出方案"时触发。按八步流程推进：
   需求诊断 → 并行探索 → 澄清发问 → 对抗验证+方案 → 展示设计 → 生成 spec
-  → spec 自检对抗 → 交接计划。融合 superpowers 的 brainstorming、gstack 的
-  office-hours / agent-browser / review+codex，以及 openspec 的 change 提案。
+  → spec 自检对抗 → 交接计划。借鉴 superpowers / gstack / openspec 的方法论：
+  office-hours / agent-browser / review+codex，以及 openspec 的 change 提案；均已内化为本 skill 的自包含指引，可选增强，非强制依赖。
 ---
 
 # product-analysis —— 八步需求分析与设计流程
@@ -112,6 +112,8 @@ CLI 已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.m
 ---
 
 ## 与方法的对应
+
+> 以下为方法论**灵感来源**（可选增强，非强制依赖），均已内化为本 skill 的自包含指引。
 
 - **superpowers.brainstorming**：探索上下文、澄清发问、给多方案、构建设计
 - **gstack.office-hours**：六问逼出需求现实（status quo / 绝望细节 / 最窄切口）

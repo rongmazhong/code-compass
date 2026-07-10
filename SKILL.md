@@ -1,7 +1,7 @@
 ---
 name: code-compass
 description: |
-  个人 skill 库与 CLI 的总入口。融合 superpowers / gstack / OpenSpec / develop-workflow-rong。
+  个人 skill 库与 CLI 的总入口。借鉴 superpowers / gstack / OpenSpec / develop-workflow-rong 的方法论（均已内化为自包含流程，非强制依赖）。
    当用户希望启用 code-compass、运行其命令（use-code-compass / init / product-analysis / dev），
   或在会话中需要按本库方法论（柏拉图式发问、spec 驱动开发、状态机编排）工作时加载。
 ---
@@ -33,6 +33,8 @@ agent 加载本 skill 后，依据用户意图选择对应子命令：
 `idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → summary`。
 
 ## 设计融合
+
+> 以下为方法论**灵感来源**（可选增强，非强制依赖）：code-compass 已将其内化为自包含的 skill 工作流，单独使用即可跑通全流程。
 
 - **superpowers**：方法论优先（先理解再实现、TDD、系统化调试、验证）
 - **gstack**：QA 用 agent-browser，审查用 review + codex，发布用 /ship

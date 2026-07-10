@@ -1,6 +1,6 @@
 # OpenSpec 存储
 
-本目录采用 [OpenSpec](https://openspec.dev) 风格的 spec 驱动开发结构。
+本目录采用 [OpenSpec](https://openspec.dev) 风格的 spec 驱动开发结构（仅借鉴其目录/提案约定，非依赖 OpenSpec 工具或技能）。
 
 ```
 .harness/openspec/
