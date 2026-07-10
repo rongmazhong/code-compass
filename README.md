@@ -1,26 +1,70 @@
-# code-compass
+# 🧭 code-compass · 开发指南针
 
-一个融合 **superpowers / gstack / OpenSpec / develop-workflow-rong** 的个人 skill 库与 CLI。
-它不是堆功能，而是一套"先理解问题、再 spec 驱动实现"的工程方法论编排器。
+> **compass** 是中国古代罗盘 —— 辨方位、定方向、不迷于途。
+> **code-compass** 即为「开发指南针」：在需求迷雾中为你定方位，在代码汪洋里指航向，
+> 让你始终清楚「现在在哪、下一步往哪走」。
 
-## 核心思想
+code-compass 不是又一个堆功能的脚手架，而是一套 **spec 驱动的工程方法论编排器**。
+它把业界成熟的四种方法论 —— **superpowers / gstack / OpenSpec / develop-workflow-rong** ——
+编排成一支「先理解问题、再 spec 驱动实现」的虚拟团队，让 AI 编程助手像老练的船长一样，
+既懂方向，又懂掌舵。
 
-| 来源 | 贡献 |
-|------|------|
-| **superpowers** | 方法论优先：brainstorm / TDD / 系统化调试 / 计划驱动 |
-| **gstack** | 角色化虚拟团队、QA（agent-browser）、审查（review + codex）、发布（/ship） |
-| **OpenSpec** | spec 驱动的变更管理：`specs/`（truth）+ `changes/`（proposal + tasks + delta） |
-| **develop-workflow-rong** | 自动状态机编排：`.harness/state/workflow-state.json` 阶段推进 |
+---
 
-## 安装
+## ✨ 为什么需要开发指南针
+
+- 🌀 **需求迷雾**：想法很多，却说不清到底要做什么。code-compass 用**柏拉图式（苏格拉底式）发问**帮你厘清边界。
+- 🧭 **方向迷失**：写着写着就偏离初衷。code-compass 用 **spec 作为唯一事实源**，让每一步都可追溯。
+- ⏸️ **中断即失忆**：任务被打断就前功尽弃。code-compass 用**状态机**记录进度，断点续跑。
+- 🤖 **方法论散落**：brainstorm、TDD、调试、审查各自为政。code-compass 把它们**编排成一条流水线**。
+
+---
+
+## 🧩 方法论融合
+
+| 来源 | 贡献 | 指南针中的角色 |
+|------|------|----------------|
+| **superpowers** | 方法论优先：brainstorm / TDD / 系统化调试 / 计划驱动 | 掌舵之心 —— 先理解，再动手 |
+| **gstack** | 角色化虚拟团队、QA（agent-browser）、审查（review + codex）、发布（/ship） | 船员团队 —— 各司其职，协同推进 |
+| **OpenSpec** | spec 驱动的变更管理：`specs/`（truth）+ `changes/`（proposal + tasks + delta） | 海图 —— 唯一的事实源 |
+| **develop-workflow-rong** | 自动状态机编排：`.harness/state/workflow-state.json` 阶段推进 | 舵轮 —— 驱动航程前进 |
+
+---
+
+## 🚀 快速开始
+
+code-compass 支持两种安装方式，按你的习惯任选其一。
+
+### 安装
+
+通过 skills CLI 一键安装 code-compass 技能库：
 
 ```bash
-git clone git@github.com:rongmazhong/code-compass.git
-cd code-compass
-chmod +x code-compass
+npx skills add @rongmazhong/code-compass
 ```
 
-## 命令
+> 💡 `npx skills add` 会从技能 registry 拉取并注册 skill，一键启用、开箱即用。
+
+### 使用
+
+安装后，在 coding agents 中使用以下命令：
+
+```
+# 1. 在你的项目里初始化指南针
+
+执行`/code-compass init` 命令
+
+# 2. 辨明方向：发问 → 生成 OpenSpec 风格的 spec
+
+执行`/code-compass product-analysis feature-xxx`
+
+# 3. 扬帆起航：基于 spec 实现 → 推进 workflow-state
+`/code-compass dev feature-xxx`
+```
+
+---
+
+## 🛠 命令一览
 
 | 命令 | 作用 |
 |------|------|
@@ -31,16 +75,20 @@ chmod +x code-compass
 | `code-compass status [activate]` | 查看当前工作流状态；`activate` 激活当前阶段自动化流程（参考 develop-workflow-rong） |
 | `code-compass wiki [topic]` | 更新/重建项目 wiki（`docs/`：概览/架构/模块/API + 索引） |
 
-## 典型流程
+---
 
-```bash
-code-compass use-code-compass     # 启用库
-cd your-project && code-compass init
-code-compass product-analysis my-feature    # 发问 → openspec/changes/my-feature/
-code-compass dev my-feature       # 实现 → 推进 workflow-state
+## 🧭 航程状态机
+
+`.harness/state/workflow-state.json` 记录进度，中断后可从断点续跑。
+这是指南针的「舵轮」，始终指向当前所处的阶段：
+
+```
+idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → shipped
 ```
 
-## 目录结构
+---
+
+## 📂 目录结构
 
 ```
 code-compass/
@@ -86,14 +134,17 @@ your-project/
 └── AGENTS.md                # 已注入 code-compass 路由段
 ```
 
-## 阶段状态机
+---
 
-`.harness/state/workflow-state.json` 记录进度，中断后可从断点续跑：
+## 🎯 适用场景
 
-```
-idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → shipped
-```
+- 你有一个想法，但还没想清楚要做什么 → `product-analysis` 帮你**辨方位**
+- 你接手一个陌生项目，想快速理解全貌 → `wiki` 生成**项目海图**
+- 你有明确 spec，想稳稳落地 → `dev` 进入**计划驱动的航行**
+- 你的任务常被中断，需要断点续跑 → 状态机**记住你的航程**
 
-## License
+---
+
+## 📜 License
 
 MIT
