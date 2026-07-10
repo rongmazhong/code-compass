@@ -69,7 +69,7 @@ npx skills add @rongmazhong/code-compass
 | 命令 | 作用 |
 |------|------|
 | `code-compass use-code-compass` | 注册并启用 skill 库（将 `skills/` 软链到 agent 技能目录 `~/.agents/skills`，并确保目标项目已 `init`） |
-| `code-compass init` | 在当前项目初始化 `.harness/`（state + rules）、`openspec/` 骨架，并向 `AGENTS.md` 注入路由 |
+| `code-compass init` | 在当前项目初始化 `.harness/`（state + rules + openspec），并向 `AGENTS.md` 注入路由 |
 | `code-compass product-analysis [name]` | 柏拉图式（苏格拉底式）发问，确定需求范围，生成 OpenSpec 风格的 spec 文档 |
 | `code-compass dev\|develop [name]` | 基于 spec 进行开发实现（计划 → TDD → 子代理 → 验证） |
 | `code-compass status [activate]` | 查看当前工作流状态；`activate` 激活当前阶段自动化流程（参考 develop-workflow-rong） |
@@ -103,10 +103,10 @@ code-compass/
 ├── harness/                 # init 注入目标项目的模板
 │   ├── AGENTS.md.harness
 │   ├── config.json
-│   └── workflow-state.json
-├── openspec/                # 本库自身的 spec 存储（兼作模板范例）
-│   ├── project.md
-│   └── README.md
+│   ├── workflow-state.json
+│   └── openspec/           # openspec 模板（project.md / README.md）
+│       ├── project.md
+│       └── README.md
 └── templates/              # product-analysis/dev 生成的文档模板
     ├── proposal.md
     ├── tasks.md
@@ -120,11 +120,11 @@ your-project/
 ├── .harness/
 │   ├── config.json
 │   ├── state/workflow-state.json
-│   └── rules/{structure.md,workflow.md,coding.md}
-├── openspec/
-│   ├── project.md
-│   ├── specs/
-│   └── changes/<slug>/{proposal.md,tasks.md,specs/}
+│   ├── rules/{structure.md,workflow.md,coding.md}
+│   └── openspec/           # spec 驱动变更管理（OpenSpec 风格）
+│       ├── project.md
+│       ├── specs/
+│       └── changes/<slug>/{proposal.md,tasks.md,specs/}
 ├── docs/                    # 项目 wiki（AI agent 入口）
 │   ├── INDEX.md             # 索引
 │   ├── overview.md          # 项目概览

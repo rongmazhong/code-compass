@@ -3,7 +3,7 @@
 本目录采用 [OpenSpec](https://openspec.dev) 风格的 spec 驱动开发结构。
 
 ```
-openspec/
+.harness/openspec/
 ├── project.md            # 项目级上下文（init 生成）
 ├── specs/                # 当前能力 spec（truth）
 │   └── <capability>/spec.md

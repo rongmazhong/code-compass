@@ -8,7 +8,7 @@ description: |
 
 # dev / develop —— 基于 spec 的开发实现
 
-消费 `openspec/changes/<slug>/` 中的 spec，按"计划 → TDD → 子代理实现 → 验证"
+消费 `.harness/openspec/changes/<slug>/` 中的 spec，按"计划 → TDD → 子代理实现 → 验证"
 的闭环完成开发，并维护 `.harness/state/workflow-state.json` 阶段推进。
 
 ## 触发条件
@@ -19,7 +19,7 @@ description: |
 
 ## 阶段前置
 
-CLI 已将 `stage` 置为 `dev`，并选定 `openspec/changes/<slug>/`。
+CLI 已将 `stage` 置为 `dev`，并选定 `.harness/openspec/changes/<slug>/`。
 
 ## 执行流程
 

@@ -30,5 +30,5 @@ description: |
 
 - **superpowers**：本库的 skill 遵循其"方法论优先"原则（先理解再实现、TDD、系统化调试）
 - **gstack**：发布/审查阶段可调用 gstack 的 `/ship`、`review`、`codex` 等
-- **openspec**：`product-analysis` 产出的 spec 与 `dev` 消费的 spec 均存放于 `openspec/`
+- **openspec**：`product-analysis` 产出的 spec 与 `dev` 消费的 spec 均存放于 `.harness/openspec/`
 - **develop-workflow-rong**：`.harness/workflow-state.json` 复用其状态机思路做阶段编排

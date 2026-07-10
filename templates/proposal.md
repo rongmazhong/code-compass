@@ -13,7 +13,7 @@
 
 ## What Changes
 
-> 一句话概述本次变更触及的能力（对应 openspec/specs 下的 capability 名）。
+> 一句话概述本次变更触及的能力（对应 .harness/openspec/specs 下的 capability 名）。
 
 ## Impact
 

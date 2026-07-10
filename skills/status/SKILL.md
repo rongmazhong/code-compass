@@ -44,7 +44,7 @@ develop-workflow-rong 的阶段编排一一对应：
 | 当前 stage | 激活动作（参考 develop-workflow-rong） |
 |------------|----------------------------------------|
 | `idea` | 运行 `product-analysis`，加载 skills/product-analysis/SKILL.md 柏拉图式发问 |
-| `product-analysis` | 继续填充 `openspec/changes/<slug>/`，完成后推进 `planned` |
+| `product-analysis` | 继续填充 `.harness/openspec/changes/<slug>/`，完成后推进 `planned` |
 | `planned` | 运行 `dev`，进入 PLANNED→DEVELOPING 编排（writing-plans → TDD → 子代理） |
 | `dev` | 加载 skills/dev/SKILL.md，按 计划→TDD→子代理→验证 推进到 `implemented` |
 | `implemented` | IMPLEMENTED 阶段：agent-browser 端到端 QA，修复后推进 `qa` |

@@ -15,7 +15,7 @@ description: |
 | 命令 | skill 指引 | 作用 |
 |------|-----------|------|
 | `use-code-compass` | `skills/use-code-compass/SKILL.md` | 注册并启用库（软链 skills 到 agent 技能目录） |
-| `init` | `skills/init/SKILL.md` | 初始化 `.harness/` 与 `openspec/`，注入 AGENTS.md |
+| `init` | `skills/init/SKILL.md` | 初始化 `.harness/`（含 state/rules/openspec），注入 AGENTS.md |
 | `product-analysis` | `skills/product-analysis/SKILL.md` | 柏拉图式发问 → 需求范围 → spec 文档 |
 | `dev` / `develop` | `skills/dev/SKILL.md` | 基于 spec 的开发实现 |
 | `status [activate]` | `skills/status/SKILL.md` | 查看状态 / 激活当前阶段自动化流程 |
@@ -36,5 +36,5 @@ agent 加载本 skill 后，依据用户意图选择对应子命令：
 
 - **superpowers**：方法论优先（先理解再实现、TDD、系统化调试、验证）
 - **gstack**：QA 用 agent-browser，审查用 review + codex，发布用 /ship
-- **OpenSpec**：`openspec/changes/<slug>/` 的 proposal + tasks + spec delta
+- **OpenSpec**：`.harness/openspec/changes/<slug>/` 的 proposal + tasks + spec delta
 - **develop-workflow-rong**：状态机阶段即编排依据，支持断点续跑

@@ -92,10 +92,13 @@ cmd_init() {
   # 生成 docs/ 项目 wiki（概览/架构/核心模块/功能与 API + 索引）
   _gen_docs "$TARGET_DIR/docs"
 
-  # openspec 骨架
-  mkdir -p "$TARGET_DIR/openspec/specs" "$TARGET_DIR/openspec/changes"
-  if [ ! -f "$TARGET_DIR/openspec/project.md" ]; then
-    cp "$CC_ROOT/openspec/project.md" "$TARGET_DIR/openspec/project.md"
+  # openspec 骨架（置于 .harness/openspec 下）
+  mkdir -p "$TARGET_DIR/.harness/openspec/specs" "$TARGET_DIR/.harness/openspec/changes"
+  if [ ! -f "$TARGET_DIR/.harness/openspec/project.md" ]; then
+    cp "$CC_ROOT/harness/openspec/project.md" "$TARGET_DIR/.harness/openspec/project.md"
+  fi
+  if [ ! -f "$TARGET_DIR/.harness/openspec/README.md" ]; then
+    cp "$CC_ROOT/harness/openspec/README.md" "$TARGET_DIR/.harness/openspec/README.md"
   fi
 
   # 注入 AGENTS.md 指引
@@ -116,7 +119,7 @@ cmd_init() {
   log "  .harness/state/workflow-state.json"
   log "  .harness/rules/ (structure.md workflow.md coding.md)"
   log "  docs/ (wiki: overview/architecture/modules/api + INDEX)"
-  log "  openspec/ (specs/ changes/ project.md)"
+  log "  .harness/openspec/ (specs/ changes/ project.md)"
   log "  AGENTS.md (已注入 code-compass 路由)"
 }
 
@@ -130,7 +133,7 @@ cmd_product_analysis() {
   local slug; slug="$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')"
   [ -z "$slug" ] && die "无法从 '$name' 生成合法 slug"
 
-  local change_dir="$TARGET_DIR/openspec/changes/$slug"
+  local change_dir="$TARGET_DIR/.harness/openspec/changes/$slug"
   mkdir -p "$change_dir/specs"
 
   cp "$CC_ROOT/templates/proposal.md" "$change_dir/proposal.md"
@@ -141,7 +144,7 @@ cmd_product_analysis() {
 
   cat <<EOF
 
-✅ 已创建变更工作区: openspec/changes/$slug/
+✅ 已创建变更工作区: .harness/openspec/changes/$slug/
    - proposal.md  (为什么做)
    - tasks.md     (实现步骤)
    - specs/       (能力 spec delta，待 product-analysis 阶段填充)
@@ -158,19 +161,19 @@ EOF
 cmd_dev() {
   local slug="${1:-}"
   if [ -z "$slug" ]; then
-    local latest; latest="$(ls -1 "$TARGET_DIR/openspec/changes" 2>/dev/null | tail -1)"
+    local latest; latest="$(ls -1 "$TARGET_DIR/.harness/openspec/changes" 2>/dev/null | tail -1 || true)"
     [ -z "$latest" ] && die "未找到任何变更，请先运行: code-compass product-analysis <name>"
     slug="$latest"
     warn "未指定变更，自动选择最新一个: $slug"
   fi
-  local change_dir="$TARGET_DIR/openspec/changes/$slug"
+  local change_dir="$TARGET_DIR/.harness/openspec/changes/$slug"
   [ -d "$change_dir" ] || die "变更不存在: $slug"
 
   _set_stage "$slug" "dev"
 
   cat <<EOF
 
-✅ 进入开发阶段: openspec/changes/$slug/
+✅ 进入开发阶段: .harness/openspec/changes/$slug/
 下一步：请 agent 加载 skills/dev/SKILL.md，按其中的方法论：
    1. writing-plans   将 spec 拆解为可执行的微任务
    2. TDD             红-绿-重构循环
@@ -266,7 +269,7 @@ ACT
     product-analysis)
       cat <<'ACT'
   ▶ 当前：需求分析进行中。agent 应继续加载 skills/product-analysis/SKILL.md，
-    将对话结论写入 openspec/changes/<slug>/{proposal.md,specs/,tasks.md}，
+    将对话结论写入 .harness/openspec/changes/<slug>/{proposal.md,specs/,tasks.md}，
     完成后把 stage 推进到 planned，再运行 `code-compass dev <slug>`。
 ACT
       ;;
@@ -433,7 +436,7 @@ _detect_project() {
   elif [ -f "$TARGET_DIR/package.json" ]; then
     PROJ_LANG="JavaScript/TypeScript"; PROJ_TECH="Node.js 项目"
     if [ -f "$TARGET_DIR/tsconfig.json" ]; then PROJ_TECH="$PROJ_TECH (TypeScript)"; fi
-    local scripts; scripts="$(grep -oE '"(build|test|lint|format|dev|start)"' "$TARGET_DIR/package.json" 2>/dev/null | tr -d '"' | tr '\n' ' ')"
+    local scripts; scripts="$(grep -oE '"(build|test|lint|format|dev|start)"' "$TARGET_DIR/package.json" 2>/dev/null | tr -d '"' | tr '\n' ' ' || true)"
     PROJ_BUILD="npm run build ${scripts:+($scripts)}"
     PROJ_TEST="npm test"
     PROJ_LINT="npm run lint / eslint"
@@ -513,7 +516,7 @@ idea → product-analysis → planned → dev → implemented → qa → verifie
 \`\`\`
 
 1. **product-analysis**：运行 \`code-compass product-analysis <name>\`，柏拉图式发问确定需求范围，
-   产出 \`openspec/changes/<slug>/{proposal.md,tasks.md,specs/}\`。
+    产出 \`.harness/openspec/changes/<slug>/{proposal.md,tasks.md,specs/}\`。
 2. **dev**：运行 \`code-compass dev <name>\`，按 spec 进行
    计划拆解 → TDD（红-绿-重构）→ 子代理实现 → 验证。
 3. 每阶段切换都更新 \`.harness/state/workflow-state.json\`，中断可断点续跑。
@@ -527,7 +530,7 @@ idea → product-analysis → planned → dev → implemented → qa → verifie
 
 ## 分支与提交
 
-- 每个变更建议独立分支，命名与 \`openspec/changes/<slug>\` 对应
+- 每个变更建议独立分支，命名与 \`.harness/openspec/changes/<slug>\` 对应
 - 提交信息清晰描述"为什么"，而非仅"改了什么"
 EOF
     log "已生成 $rules_dir/workflow.md"
