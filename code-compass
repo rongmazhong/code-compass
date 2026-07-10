@@ -254,7 +254,7 @@ except Exception:
 PY
 )"
   fi
-  [ -z "$stages" ] && stages=$'idea\nproduct-analysis\nplanned\ndev\nimplemented\nqa\nverified\nreviewed\nshipped'
+  [ -z "$stages" ] && stages=$'idea\nproduct-analysis\nplanned\ndev\nimplemented\nqa\nverified\nreviewed\nsummary'
   printf '%s\n' "$stages"
 }
 
@@ -310,13 +310,13 @@ ACT
     reviewed)
       cat <<'ACT'
   ▶ 下一步：架构与跨模型二审。参考 develop-workflow-rong 的 REVIEWED 阶段，
-    加载 review + codex，完成后推进到 shipped。
+    加载 review + codex，完成后推进到 summary。
 ACT
       ;;
-    shipped)
+    summary)
       cat <<'ACT'
-  ▶ 下一步：发布。参考 develop-workflow-rong 的 SHIPPED 阶段，
-    运行 /ship（或 /land-and-deploy）合并并部署，进入 deployed。
+  ▶ 下一步：总结。参考 code-compass 的 SUMMARY 阶段，
+    生成总结文档（变更回顾 / 成果 / 后续），并更新 .harness/state/workflow-state.json。
 ACT
       ;;
     *)
@@ -514,7 +514,7 @@ EOF
 ## 标准工作流（code-compass 驱动）
 
 \`\`\`
-idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → shipped
+idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → summary
 \`\`\`
 
 1. **product-analysis**：运行 \`code-compass product-analysis <name>\`，柏拉图式发问确定需求范围，

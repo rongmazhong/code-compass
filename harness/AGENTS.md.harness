@@ -19,7 +19,7 @@
 开发进度记录在 `.harness/state/workflow-state.json`，阶段链：
 
 ```
-idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → shipped
+idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → summary
 ```
 
 ## 项目规则

@@ -83,7 +83,7 @@ npx skills add @rongmazhong/code-compass
 这是指南针的「舵轮」，始终指向当前所处的阶段：
 
 ```
-idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → shipped
+idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → summary
 ```
 
 ---

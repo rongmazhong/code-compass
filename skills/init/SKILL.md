@@ -52,7 +52,7 @@ description: |
 ```dot
 digraph cc {
   rankdir=LR;
-  idea -> product-analysis -> planned -> dev -> implemented -> qa -> verified -> reviewed -> shipped;
+  idea -> product-analysis -> planned -> dev -> implemented -> qa -> verified -> reviewed -> summary;
 }
 
 ## 目录产出
