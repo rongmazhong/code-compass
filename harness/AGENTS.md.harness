@@ -14,10 +14,18 @@
 
 ## 阶段状态
 
-开发进度记录在 `.harness/workflow-state.json`，阶段链：
+开发进度记录在 `.harness/state/workflow-state.json`，阶段链：
 
 ```
 idea → design → planned → dev → implemented → qa → verified → reviewed → shipped
 ```
+
+## 项目规则
+
+项目级规则位于 `.harness/rules/`，agent 在开发与审查时应遵循：
+
+- `rules/structure.md` —— 项目工程结构定义（技术栈、目录职责）
+- `rules/workflow.md`  —— 开发流程（构建/测试/检查命令、分支与提交约定）
+- `rules/coding.md`   —— 编码约束（通用原则 + 语言相关规则）
 
 agent 在每一步应优先遵循 code-compass 的 skill 方法论（见 skills/ 下各 SKILL.md）。

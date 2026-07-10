@@ -10,7 +10,7 @@
 | **superpowers** | 方法论优先：brainstorm / TDD / 系统化调试 / 计划驱动 |
 | **gstack** | 角色化虚拟团队、QA（agent-browser）、审查（review + codex）、发布（/ship） |
 | **OpenSpec** | spec 驱动的变更管理：`specs/`（truth）+ `changes/`（proposal + tasks + delta） |
-| **develop-workflow-rong** | 自动状态机编排：`.harness/workflow-state.json` 阶段推进 |
+| **develop-workflow-rong** | 自动状态机编排：`.harness/state/workflow-state.json` 阶段推进 |
 
 ## 安装
 
@@ -25,7 +25,7 @@ chmod +x code-compass
 | 命令 | 作用 |
 |------|------|
 | `code-compass use-code-compass` | 注册并启用 skill 库（将 `skills/` 软链到 agent 技能目录 `~/.agents/skills`，并确保目标项目已 `init`） |
-| `code-compass init` | 在当前项目初始化 `.harness/`（config + workflow-state）、`openspec/` 骨架，并向 `AGENTS.md` 注入路由 |
+| `code-compass init` | 在当前项目初始化 `.harness/`（state + rules）、`openspec/` 骨架，并向 `AGENTS.md` 注入路由 |
 | `code-compass design [name]` | 柏拉图式（苏格拉底式）发问，确定需求范围，生成 OpenSpec 风格的 spec 文档 |
 | `code-compass dev\|develop [name]` | 基于 spec 进行开发实现（计划 → TDD → 子代理 → 验证） |
 
@@ -69,7 +69,8 @@ code-compass/
 your-project/
 ├── .harness/
 │   ├── config.json
-│   └── workflow-state.json
+│   ├── state/workflow-state.json
+│   └── rules/{structure.md,workflow.md,coding.md}
 ├── openspec/
 │   ├── project.md
 │   ├── specs/
@@ -79,7 +80,7 @@ your-project/
 
 ## 阶段状态机
 
-`.harness/workflow-state.json` 记录进度，中断后可从断点续跑：
+`.harness/state/workflow-state.json` 记录进度，中断后可从断点续跑：
 
 ```
 idea → design → planned → dev → implemented → qa → verified → reviewed → shipped

@@ -27,7 +27,7 @@ agent 加载本 skill 后，依据用户意图选择对应子命令：
 - 已有 spec 要落地 → `dev`
 
 每个子命令的详细方法论见 `skills/<name>/SKILL.md`。阶段进度统一维护在
-`.harness/workflow-state.json`，阶段链：
+`.harness/state/workflow-state.json`，阶段链：
 `idea → design → planned → dev → implemented → qa → verified → reviewed → shipped`。
 
 ## 设计融合

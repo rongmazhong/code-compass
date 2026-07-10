@@ -9,13 +9,13 @@ description: |
 # dev / develop —— 基于 spec 的开发实现
 
 消费 `openspec/changes/<slug>/` 中的 spec，按"计划 → TDD → 子代理实现 → 验证"
-的闭环完成开发，并维护 `.harness/workflow-state.json` 阶段推进。
+的闭环完成开发，并维护 `.harness/state/workflow-state.json` 阶段推进。
 
 ## 触发条件
 
 - 用户运行 `code-compass dev [name]` 或 `code-compass develop [name]`
 - 用户说"开始实现"、"按 spec 开发"
-- `.harness/workflow-state.json` 的 `stage` 为 `planned` / `design`
+- `.harness/state/workflow-state.json` 的 `stage` 为 `planned` / `design`
 
 ## 阶段前置
 
@@ -55,7 +55,7 @@ CLI 已将 `stage` 置为 `dev`，并选定 `openspec/changes/<slug>/`。
 idea → design → planned → dev → implemented → qa → verified → reviewed → shipped
 ```
 
-每次阶段切换都必须更新 `.harness/workflow-state.json`，保证中断后可从断点续跑。
+每次阶段切换都必须更新 `.harness/state/workflow-state.json`，保证中断后可从断点续跑。
 
 ## 与方法的对应
 

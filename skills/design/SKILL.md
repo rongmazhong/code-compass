@@ -15,7 +15,7 @@ description: |
 
 - 用户运行 `code-compass design [name]`
 - 用户说"先设计一下"、"确定需求范围"、"这个功能怎么做"
-- `.harness/workflow-state.json` 的 `stage` 为 `idea`
+- `.harness/state/workflow-state.json` 的 `stage` 为 `idea`
 
 ## 阶段前置
 
