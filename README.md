@@ -42,13 +42,11 @@ code-compass 支持两种安装方式，按你的习惯任选其一。
 通过 skills CLI 一键安装 code-compass 技能库：
 
 ```bash
-# 仓库为 public，无需 GitHub 认证；请使用 owner/repo 格式（非 npm scope）
 npx skills add rongmazhong/code-compass
 # 或显式指定 git 地址
 npx skills add https://github.com/rongmazhong/code-compass
 ```
 
-> 💡 `npx skills add` 会从 GitHub 克隆该仓库并注册 skill，一键启用、开箱即用（public 仓库，无需认证）。
 
 ### 使用
 
