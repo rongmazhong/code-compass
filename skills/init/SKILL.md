@@ -30,6 +30,12 @@ description: |
    - `openspec/specs/`：当前能力 spec（truth）
    - `openspec/changes/`：待实现的变更提案
    - `openspec/project.md`：项目级上下文
+4. 生成 `docs/` 项目 wiki（基于探测填充脚手架，agent 随后补全）：
+   - `docs/INDEX.md`：索引，AI agent 先读本文件再深入各文档
+   - `docs/overview.md`：项目概览（技术栈、快速开始）
+   - `docs/architecture.md`：架构设计（目录布局、数据流）
+   - `docs/modules.md`：核心模块（目录职责与边界）
+   - `docs/api.md`：功能清单及 API 接口文档
 4. 向 `AGENTS.md` 注入 code-compass 路由段（用 `MARKER` 包裹，避免重复）：
    - 说明四个命令：`use-code-compass` / `init` / `design` / `dev`
    - 说明 `.harness/state/workflow-state.json` 的阶段含义
@@ -59,5 +65,12 @@ digraph cc {
     ├── structure.md   # 项目工程结构定义
     ├── workflow.md    # 开发流程
     └── coding.md      # 编码约束
+
+docs/                        # 项目 wiki（AI agent 入口）
+├── INDEX.md                 # 索引
+├── overview.md              # 项目概览
+├── architecture.md          # 架构设计
+├── modules.md               # 核心模块
+└── api.md                   # 功能清单及 API 接口
 ```
 ```

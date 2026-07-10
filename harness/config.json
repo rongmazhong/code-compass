@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "skills_dir": "skills",
   "spec_dir": "openspec",
+  "docs_dir": "docs",
   "state_dir": ".harness/state",
   "state_file": ".harness/state/workflow-state.json",
   "rules_dir": ".harness/rules",

@@ -11,6 +11,7 @@
 | `code-compass init` | 初始化 `.harness/` 与 `openspec/`，并注入本段 |
 | `code-compass design [name]` | 柏拉图式发问，确定需求范围并生成 spec |
 | `code-compass dev [name]` | 基于 spec 进行开发实现 |
+| `code-compass wiki [topic]` | 更新/重建项目 wiki（`docs/`） |
 
 ## 阶段状态
 
@@ -29,3 +30,15 @@ idea → design → planned → dev → implemented → qa → verified → revi
 - `rules/coding.md`   —— 编码约束（通用原则 + 语言相关规则）
 
 agent 在每一步应优先遵循 code-compass 的 skill 方法论（见 skills/ 下各 SKILL.md）。
+
+## 项目 Wiki
+
+项目文档位于 `docs/`，作为 AI agent 了解项目的入口：
+
+- `docs/INDEX.md` —— **索引**，agent 应先读它再深入各文档
+- `docs/overview.md` —— 项目概览（做什么、技术栈、快速开始）
+- `docs/architecture.md` —— 架构设计（分层、数据流、关键决策）
+- `docs/modules.md` —— 核心模块（目录职责与边界）
+- `docs/api.md` —— 功能清单及 API 接口文档
+
+更新文档运行 `code-compass wiki`（重建索引）或 `code-compass wiki <overview|architecture|modules|api>`（重建指定文档）。

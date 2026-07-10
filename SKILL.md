@@ -18,6 +18,7 @@ description: |
 | `init` | `skills/init/SKILL.md` | 初始化 `.harness/` 与 `openspec/`，注入 AGENTS.md |
 | `design` | `skills/design/SKILL.md` | 柏拉图式发问 → 需求范围 → spec 文档 |
 | `dev` / `develop` | `skills/dev/SKILL.md` | 基于 spec 的开发实现 |
+| `wiki [topic]` | `skills/wiki/SKILL.md` | 更新/重建项目 wiki（docs/） |
 
 ## 使用方式
 

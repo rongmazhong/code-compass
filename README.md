@@ -28,6 +28,7 @@ chmod +x code-compass
 | `code-compass init` | 在当前项目初始化 `.harness/`（state + rules）、`openspec/` 骨架，并向 `AGENTS.md` 注入路由 |
 | `code-compass design [name]` | 柏拉图式（苏格拉底式）发问，确定需求范围，生成 OpenSpec 风格的 spec 文档 |
 | `code-compass dev\|develop [name]` | 基于 spec 进行开发实现（计划 → TDD → 子代理 → 验证） |
+| `code-compass wiki [topic]` | 更新/重建项目 wiki（`docs/`：概览/架构/模块/API + 索引） |
 
 ## 典型流程
 
@@ -75,6 +76,12 @@ your-project/
 │   ├── project.md
 │   ├── specs/
 │   └── changes/<slug>/{proposal.md,tasks.md,specs/}
+├── docs/                    # 项目 wiki（AI agent 入口）
+│   ├── INDEX.md             # 索引
+│   ├── overview.md          # 项目概览
+│   ├── architecture.md      # 架构设计
+│   ├── modules.md           # 核心模块
+│   └── api.md               # 功能清单及 API 接口
 └── AGENTS.md                # 已注入 code-compass 路由段
 ```
 
