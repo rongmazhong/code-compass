@@ -1,34 +1,89 @@
 # code-compass
 
-一个类似 [Superpowers](https://github.com/Geeksfino/superpowers) 的个人 skill 库。
+一个融合 **superpowers / gstack / OpenSpec / develop-workflow-rong** 的个人 skill 库与 CLI。
+它不是堆功能，而是一套"先理解问题、再 spec 驱动实现"的工程方法论编排器。
 
-## 简介
+## 核心思想
 
-`code-compass` 是我个人的工程方法论与技能（skill）集合，用于在日常开发中沉淀可复用的流程、规范与最佳实践。其设计理念借鉴 Superpowers：
+| 来源 | 贡献 |
+|------|------|
+| **superpowers** | 方法论优先：brainstorm / TDD / 系统化调试 / 计划驱动 |
+| **gstack** | 角色化虚拟团队、QA（agent-browser）、审查（review + codex）、发布（/ship） |
+| **OpenSpec** | spec 驱动的变更管理：`specs/`（truth）+ `changes/`（proposal + tasks + delta） |
+| **develop-workflow-rong** | 自动状态机编排：`.harness/workflow-state.json` 阶段推进 |
 
-- **每个 skill 聚焦一类明确的任务或决策场景**，自带触发条件与执行流程；
-- **强调方法论而非堆功能**，优先用正确的方式做事（TDD、系统化调试、计划驱动开发等）；
-- **可被 agent 直接调用**，通过 `SKILL.md` 描述触发条件与步骤，在合适的时机自动加载。
+## 安装
+
+```bash
+git clone git@github.com:rongmazhong/code-compass.git
+cd code-compass
+chmod +x code-compass
+```
+
+## 命令
+
+| 命令 | 作用 |
+|------|------|
+| `code-compass use-code-compass` | 注册并启用 skill 库（将 `skills/` 软链到 agent 技能目录 `~/.agents/skills`，并确保目标项目已 `init`） |
+| `code-compass init` | 在当前项目初始化 `.harness/`（config + workflow-state）、`openspec/` 骨架，并向 `AGENTS.md` 注入路由 |
+| `code-compass design [name]` | 柏拉图式（苏格拉底式）发问，确定需求范围，生成 OpenSpec 风格的 spec 文档 |
+| `code-compass dev\|develop [name]` | 基于 spec 进行开发实现（计划 → TDD → 子代理 → 验证） |
+
+## 典型流程
+
+```bash
+code-compass use-code-compass     # 启用库
+cd your-project && code-compass init
+code-compass design my-feature    # 发问 → openspec/changes/my-feature/
+code-compass dev my-feature       # 实现 → 推进 workflow-state
+```
 
 ## 目录结构
 
 ```
 code-compass/
-├── README.md              # 项目说明
-└── <skill-name>/          # 单个 skill 目录
-    └── SKILL.md           # skill 的触发条件与执行流程
+├── README.md
+├── SKILL.md                 # 顶层 skill：加载整个库的总说明
+├── code-compass             # CLI 可执行
+├── skills/                  # 各命令/能力的方法论（agent 可读）
+│   ├── use-code-compass/SKILL.md
+│   ├── init/SKILL.md
+│   ├── design/SKILL.md
+│   └── dev/SKILL.md
+├── harness/                 # init 注入目标项目的模板
+│   ├── AGENTS.md.harness
+│   ├── config.json
+│   └── workflow-state.json
+├── openspec/                # 本库自身的 spec 存储（兼作模板范例）
+│   ├── project.md
+│   └── README.md
+└── templates/              # design/dev 生成的文档模板
+    ├── proposal.md
+    ├── tasks.md
+    └── spec.md
 ```
 
-## 使用方式
+目标项目被 `init` 后会产生：
 
-本仓库作为 agent 的 skills 来源之一被引用。当任务匹配某个 skill 的触发条件时，对应 `SKILL.md` 会被加载并指导执行。
+```
+your-project/
+├── .harness/
+│   ├── config.json
+│   └── workflow-state.json
+├── openspec/
+│   ├── project.md
+│   ├── specs/
+│   └── changes/<slug>/{proposal.md,tasks.md,specs/}
+└── AGENTS.md                # 已注入 code-compass 路由段
+```
 
-## 设计原则
+## 阶段状态机
 
-1. 先理解问题，再动手实现（brainstorm / plan 优先）。
-2. 编码前写测试（TDD）。
-3. 遇到 bug 先定位根因，再修复（systematic debugging）。
-4. 完成前做验证（verification before completion）。
+`.harness/workflow-state.json` 记录进度，中断后可从断点续跑：
+
+```
+idea → design → planned → dev → implemented → qa → verified → reviewed → shipped
+```
 
 ## License
 

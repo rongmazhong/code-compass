@@ -1,0 +1,223 @@
+#!/usr/bin/env bash
+# code-compass —— 个人 skill 库 CLI
+#
+# 设计融合了四种方法论：
+#   - superpowers : 方法论优先（brainstorm / TDD / 系统化调试 / 计划驱动）
+#   - gstack      : 角色化虚拟团队与发布流水线
+#   - openspec    : spec 驱动的变更管理（specs / changes / tasks）
+#   - develop-workflow-rong : 自动状态机编排（.harness/workflow-state.json）
+#
+# 本 CLI 是一个"调度器 + 脚手架"：它准备目录与状态文件，并指示 agent
+# 读取对应 skills/<cmd>/SKILL.md 中的方法论去执行具体工作。
+#
+# 子命令：
+#   use-code-compass   注册并启用本 skill 库（链接 skills 到 agent 的技能目录）
+#   init               在当前项目初始化 .harness/ 与 AGENTS.md
+#   design             进入柏拉图式发问，确定需求范围并生成 spec
+#   dev|develop        基于 spec 进行开发实现
+#   help               显示帮助
+
+set -euo pipefail
+
+CC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILLS_DIR="${CODE_COMPASS_SKILLS_DIR:-$HOME/.agents/skills}"
+TARGET_DIR="${CODE_COMPASS_TARGET_DIR:-$(pwd)}"
+MARKER_BEGIN="# >>> code-compass >>>"
+MARKER_END="# <<< code-compass <<<"
+
+cmd="${1:-help}"
+shift || true
+
+log()  { printf '\033[36m[code-compass]\033[0m %s\n' "$*"; }
+warn() { printf '\033[33m[code-compass]\033[0m %s\n' "$*" >&2; }
+die()  { printf '\033[31m[code-compass]\033[0m %s\n' "$*" >&2; exit 1; }
+
+# ---------------------------------------------------------------------------
+# use-code-compass : 注册并启用 skill 库
+# ---------------------------------------------------------------------------
+cmd_use() {
+  log "正在将 skills 链接到 agent 技能目录: $SKILLS_DIR"
+  mkdir -p "$SKILLS_DIR"
+  local count=0
+  for d in "$CC_ROOT"/skills/*/; do
+    name="$(basename "$d")"
+    ln -sfn "$d" "$SKILLS_DIR/$name"
+    count=$((count + 1))
+  done
+  log "已链接 $count 个 skill 到 $SKILLS_DIR"
+  log "可用 skill: $(ls "$CC_ROOT"/skills)"
+
+  # 确保当前项目已初始化 harness
+  if [ ! -d "$TARGET_DIR/.harness" ]; then
+    log "目标项目尚未初始化，先执行 init ..."
+    cmd_init
+  fi
+
+  cat <<EOF
+
+✅ code-compass 已启用。
+
+agent 现在可以通过以下方式触发 skill：
+  - 直接运行:  code-compass init | design | dev
+  - agent skill 工具: 加载 skills/<name>/SKILL.md（已软链到 $SKILLS_DIR）
+
+各 skill 触发条件见对应 SKILL.md 的 frontmatter description。
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# init : 在当前项目初始化 .harness/ 与 AGENTS.md
+# ---------------------------------------------------------------------------
+cmd_init() {
+  local harness="$TARGET_DIR/.harness"
+  mkdir -p "$harness"
+
+  # 写入 harness 配置
+  if [ ! -f "$harness/config.json" ]; then
+    cp "$CC_ROOT/harness/config.json" "$harness/config.json"
+  fi
+  # 写入初始工作流状态
+  if [ ! -f "$harness/workflow-state.json" ]; then
+    local ts; ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    sed "s/__UPDATED_AT__/$ts/" "$CC_ROOT/harness/workflow-state.json" > "$harness/workflow-state.json"
+  fi
+
+  # openspec 骨架
+  mkdir -p "$TARGET_DIR/openspec/specs" "$TARGET_DIR/openspec/changes"
+  if [ ! -f "$TARGET_DIR/openspec/project.md" ]; then
+    cp "$CC_ROOT/openspec/project.md" "$TARGET_DIR/openspec/project.md"
+  fi
+
+  # 注入 AGENTS.md 指引
+  local agent_md="$TARGET_DIR/AGENTS.md"
+  local block; block="$(cat "$CC_ROOT/harness/AGENTS.md.harness")"
+  if [ ! -f "$agent_md" ]; then
+    printf '%s\n%s\n%s\n' "$MARKER_BEGIN" "$block" "$MARKER_END" > "$agent_md"
+    log "已创建 $agent_md"
+  elif grep -q "$MARKER_BEGIN" "$agent_md"; then
+    warn "$agent_md 已包含 code-compass 段，跳过注入"
+  else
+    printf '\n%s\n%s\n%s\n' "$MARKER_BEGIN" "$block" "$MARKER_END" >> "$agent_md"
+    log "已向 $agent_md 追加 code-compass 段"
+  fi
+
+  log "初始化完成："
+  log "  .harness/config.json"
+  log "  .harness/workflow-state.json"
+  log "  openspec/ (specs/ changes/ project.md)"
+  log "  AGENTS.md (已注入 code-compass 路由)"
+}
+
+# ---------------------------------------------------------------------------
+# design : 柏拉图式发问 -> 需求范围 -> spec 文档
+# ---------------------------------------------------------------------------
+cmd_design() {
+  local name="${1:-}"
+  [ -z "$name" ] && read -r -p "请输入本次变更名称 (kebab-case): " name
+  [ -z "$name" ] && die "变更名称不能为空"
+  local slug; slug="$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')"
+  [ -z "$slug" ] && die "无法从 '$name' 生成合法 slug"
+
+  local change_dir="$TARGET_DIR/openspec/changes/$slug"
+  mkdir -p "$change_dir/specs"
+
+  cp "$CC_ROOT/templates/proposal.md" "$change_dir/proposal.md"
+  cp "$CC_ROOT/templates/tasks.md"   "$change_dir/tasks.md"
+
+  # 更新工作流状态
+  _set_stage "$slug" "design"
+
+  cat <<EOF
+
+✅ 已创建变更工作区: openspec/changes/$slug/
+   - proposal.md  (为什么做)
+   - tasks.md     (实现步骤)
+   - specs/       (能力 spec delta，待 design 阶段填充)
+
+下一步：请 agent 加载 skills/design/SKILL.md，按"柏拉图式发问"流程
+与用户确认需求范围，并将结论写入上述文件。完成后运行:
+   code-compass dev $slug
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# dev|develop : 基于 spec 进行开发实现
+# ---------------------------------------------------------------------------
+cmd_dev() {
+  local slug="${1:-}"
+  if [ -z "$slug" ]; then
+    local latest; latest="$(ls -1 "$TARGET_DIR/openspec/changes" 2>/dev/null | tail -1)"
+    [ -z "$latest" ] && die "未找到任何变更，请先运行: code-compass design <name>"
+    slug="$latest"
+    warn "未指定变更，自动选择最新一个: $slug"
+  fi
+  local change_dir="$TARGET_DIR/openspec/changes/$slug"
+  [ -d "$change_dir" ] || die "变更不存在: $slug"
+
+  _set_stage "$slug" "dev"
+
+  cat <<EOF
+
+✅ 进入开发阶段: openspec/changes/$slug/
+下一步：请 agent 加载 skills/dev/SKILL.md，按其中的方法论：
+   1. writing-plans   将 spec 拆解为可执行的微任务
+   2. TDD             红-绿-重构循环
+   3. subagent        逐任务实现
+   4. verification     完成前验证
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# 工具函数
+# ---------------------------------------------------------------------------
+_set_stage() {
+  local slug="$1" stage="$2"
+  local state="$TARGET_DIR/.harness/workflow-state.json"
+  [ -f "$state" ] || cmd_init >/dev/null 2>&1
+  local ts; ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$state" "$stage" "$slug" "$ts" <<'PY'
+import json, sys
+path, stage, slug, ts = sys.argv[1:5]
+try:
+    data = json.load(open(path))
+except Exception:
+    data = {}
+data["stage"] = stage
+data["spec"] = slug
+data["updated_at"] = ts
+if stage not in data.get("completed", []):
+    data.setdefault("completed", []).append(stage)
+json.dump(data, open(path, "w"), indent=2, ensure_ascii=False)
+print(open(path).read())
+PY
+  else
+    warn "未找到 python3，跳过状态更新（请手动编辑 $state）"
+  fi
+}
+
+cmd_help() {
+  cat <<EOF
+code-compass —— 个人 skill 库 CLI
+
+用法:
+  code-compass use-code-compass   注册并启用本 skill 库
+  code-compass init               在当前项目初始化 .harness/ 与 AGENTS.md
+  code-compass design [name]      柏拉图式发问，确定需求范围并生成 spec
+  code-compass dev|develop [name] 基于 spec 进行开发实现
+  code-compass help               显示本帮助
+
+环境变量:
+  CODE_COMPASS_SKILLS_DIR   agent 技能目录 (默认 ~/.agents/skills)
+  CODE_COMPASS_TARGET_DIR   目标项目目录   (默认 当前目录)
+EOF
+}
+
+case "$cmd" in
+  use|use-code-compass) cmd_use "$@" ;;
+  init)                  cmd_init "$@" ;;
+  design)                cmd_design "$@" ;;
+  dev|develop)           cmd_dev "$@" ;;
+  help|--help|-h)        cmd_help ;;
+  *)                     warn "未知命令: $cmd"; cmd_help; exit 1 ;;
+esac
