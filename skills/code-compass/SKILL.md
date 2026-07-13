@@ -10,6 +10,19 @@ description: |
 
 个人 skill 库与 CLI，提供一套 spec 驱动的开发方法论。
 
+## 安装与启用
+
+本 skill 通过 skills 注册表分发，安装后完整工具位于 `~/.agents/skills/code-compass/`：
+
+```bash
+npx skills add rongmazhong/code-compass
+# 让 code-compass 命令可用（一次性）
+ln -sfn ~/.agents/skills/code-compass/code-compass ~/.local/bin/code-compass
+code-compass use-code-compass      # 链接子 skill 并完成当前项目初始化
+```
+
+> 运行 `use-code-compass` 时也会自动补建上面的软链。若 `~/.local/bin` 不在 PATH，请将其加入 shell 配置。
+
 ## 四个核心命令
 
 | 命令 | skill 指引 | 作用 |
