@@ -24,8 +24,21 @@
 set -euo pipefail
 
 CC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SKILLS_DIR="${CODE_COMPASS_SKILLS_DIR:-$HOME/.agents/skills}"
-TARGET_DIR="${CODE_COMPASS_TARGET_DIR:-$(pwd)}"
+
+# 解析 HOME（环境可能未设置，避免 set -u 下报 unbound variable）
+if [ -z "${HOME:-}" ]; then
+  HOME="$(getent passwd "$(id -u)" 2>/dev/null | cut -d: -f6)"
+  [ -z "$HOME" ] && HOME="$(dscl . -read "/Users/$(id -un)" NFSHomeDirectory 2>/dev/null | awk 'NF>1{print $2}')"
+  [ -z "$HOME" ] && HOME=/tmp
+fi
+: "${HOME:?无法解析 HOME}"
+
+: "${CODE_COMPASS_SKILLS_DIR:=}"
+: "${SKILLS_DIR:=$CODE_COMPASS_SKILLS_DIR}"
+: "${SKILLS_DIR:=$HOME/.agents/skills}"
+: "${CODE_COMPASS_TARGET_DIR:=}"
+: "${TARGET_DIR:=$CODE_COMPASS_TARGET_DIR}"
+: "${TARGET_DIR:=$(pwd)}"
 MARKER_BEGIN="# >>> code-compass >>>"
 MARKER_END="# <<< code-compass <<<"
 
