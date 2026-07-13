@@ -20,8 +20,18 @@ description: |
 ## 阶段前置
 
 CLI 已将 `stage` 置为 `dev`，并选定 `.harness/openspec/changes/<slug>/`。
+**关键：CLI 已自动创建（或复用）本次变更的 git worktree**，输出中给出：
+- worktree 路径（如 `<父目录>/worktrees/<slug>`）
+- 分支名（如 `feat/<slug>`）
 
 ## 执行流程
+
+### 0. WORKTREE —— 切换到隔离工作区
+- `cd` 到 CLI 输出的 worktree 路径，后续所有开发均在该 worktree 内进行，
+  主仓库保持干净、互不影响。
+- 若目标项目不是 git 仓库，CLI 会回退到当前目录直接开发。
+- spec 文件仍在主仓库 `.harness/openspec/changes/<slug>/`，agent 按该绝对路径读取。
+- 开发完成、分支合并/删除前，运行 `code-compass worktree prune` 清理注册信息。
 
 ### 1. PLANNED —— 计划拆解（writing-plans）
 - 读取 `specs/<capability>/spec.md` 的 Requirements

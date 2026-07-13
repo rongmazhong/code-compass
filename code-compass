@@ -14,7 +14,8 @@
 #   use-code-compass   注册并启用本 skill 库（链接 skills 到 agent 的技能目录）
 #   init               在当前项目初始化 .harness/、docs/ 与 AGENTS.md
 #   product-analysis  进入柏拉图式发问，确定需求范围并生成 spec
-#   dev|develop        基于 spec 进行开发实现
+#   dev|develop        基于 spec 进行开发实现（自动创建 git worktree）
+#   worktree [list|prune]  管理开发用 git worktree
 #   wiki [topic]       更新/重建项目 wiki（docs/ 概览/架构/模块/API + 索引）
 #   help               显示帮助
 
@@ -171,17 +172,52 @@ cmd_dev() {
   local change_dir="$TARGET_DIR/.harness/openspec/changes/$slug"
   [ -d "$change_dir" ] || die "变更不存在: $slug"
 
-  _set_stage "$slug" "dev"
+  # 创建/复用 git worktree，隔离开发环境
+  _setup_worktree "$slug"
+  _set_stage "$slug" "dev" "$WT_BRANCH"
 
   cat <<EOF
 
 ✅ 进入开发阶段: .harness/openspec/changes/$slug/
-下一步：请 agent 加载 skills/dev/SKILL.md，按其中的方法论：
-   1. writing-plans   将 spec 拆解为可执行的微任务
-   2. TDD             红-绿-重构循环
-   3. subagent        逐任务实现
-   4. verification     完成前验证
+📂 开发隔离于 git worktree:
+   - 路径: $WT_PATH
+   - 分支: $WT_BRANCH
+   （若非 git 仓库则回退到当前目录）
+
+下一步：请 agent 加载 skills/dev/SKILL.md，并在上述 worktree 内工作：
+   1. cd 到 worktree 路径，按 spec 开发（spec 位于主仓库 $TARGET_DIR/.harness/openspec/changes/$slug/）
+   2. writing-plans   将 spec 拆解为可执行的微任务
+   3. TDD             红-绿-重构循环
+   4. subagent        逐任务实现
+   5. verification     完成前验证
+   开发完成后运行:  code-compass worktree prune  （合并/删除分支前清理 worktree）
 EOF
+}
+
+# ---------------------------------------------------------------------------
+# worktree : 管理开发用的 git worktree（list / prune）
+# ---------------------------------------------------------------------------
+cmd_worktree() {
+  local action="${1:-list}"
+  case "$action" in
+    list)
+      if git -C "$TARGET_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        log "当前项目的 git worktree 列表："
+        git -C "$TARGET_DIR" worktree list
+      else
+        warn "目标项目不是 git 仓库"
+      fi
+      ;;
+    prune)
+      if git -C "$TARGET_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git -C "$TARGET_DIR" worktree prune
+        log "已 prune 失效的 worktree 注册信息（如需删除某个 worktree 目录，用: git worktree remove <路径>）"
+      else
+        warn "目标项目不是 git 仓库"
+      fi
+      ;;
+    *) die "未知动作: $action（可选 list / prune）" ;;
+  esac
 }
 
 # ---------------------------------------------------------------------------
@@ -812,15 +848,61 @@ _module_rows() {
 # ---------------------------------------------------------------------------
 # 工具函数
 # ---------------------------------------------------------------------------
+# 创建（或复用）本次变更的 git worktree，结果通过全局变量返回：
+#   WT_BRANCH  分支名（feat/<slug>）
+#   WT_PATH    worktree 绝对路径；非 git 仓库或失败时回退为 TARGET_DIR
+_setup_worktree() {
+  local slug="$1"
+  WT_BRANCH="feat/$slug"
+  WT_PATH=""
+  local parent; parent="$(cd "$(dirname "$TARGET_DIR")" && pwd)"
+  local wt_root="$parent/worktrees"
+  WT_PATH="$wt_root/$slug"
+
+  # 非 git 仓库：退回当前目录直接开发
+  if ! git -C "$TARGET_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    warn "目标项目不是 git 仓库，跳过 worktree，直接在当前目录开发"
+    WT_PATH="$TARGET_DIR"
+    return 0
+  fi
+
+  # 已存在同名 worktree：直接复用
+  if git -C "$TARGET_DIR" worktree list --porcelain 2>/dev/null | grep -q "worktree $WT_PATH"; then
+    log "复用已存在的 worktree: $WT_PATH (分支 $WT_BRANCH)"
+    return 0
+  fi
+
+  mkdir -p "$wt_root"
+  # 路径已存在但不是合法 worktree（残留空目录）：先清理，避免 git worktree add 拒绝
+  if [ -e "$WT_PATH" ] && ! git -C "$WT_PATH" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    rm -rf "$WT_PATH"
+  fi
+
+  if git -C "$TARGET_DIR" worktree add "$WT_PATH" -b "$WT_BRANCH" 2>/dev/null; then
+    log "已创建 worktree: $WT_PATH (分支 $WT_BRANCH)"
+  elif git -C "$TARGET_DIR" rev-parse --verify "$WT_BRANCH" >/dev/null 2>&1; then
+    # 分支已存在：挂到该分支
+    if git -C "$TARGET_DIR" worktree add "$WT_PATH" "$WT_BRANCH" 2>/dev/null; then
+      log "已挂载已有分支 $WT_BRANCH 到 worktree: $WT_PATH"
+    else
+      warn "创建 worktree 失败，退回当前目录开发"
+      WT_PATH="$TARGET_DIR"
+    fi
+  else
+    warn "创建 worktree 失败，退回当前目录开发"
+    WT_PATH="$TARGET_DIR"
+  fi
+}
+
 _set_stage() {
-  local slug="$1" stage="$2"
+  local slug="$1" stage="$2" branch="${3:-}"
   local state="$TARGET_DIR/.harness/state/workflow-state.json"
   [ -f "$state" ] || cmd_init >/dev/null 2>&1
   local ts; ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   if command -v python3 >/dev/null 2>&1; then
-    python3 - "$state" "$stage" "$slug" "$ts" <<'PY'
+    python3 - "$state" "$stage" "$slug" "$ts" "$branch" <<'PY'
 import json, sys
-path, stage, slug, ts = sys.argv[1:5]
+path, stage, slug, ts, branch = sys.argv[1:6]
 try:
     data = json.load(open(path))
 except Exception:
@@ -828,6 +910,8 @@ except Exception:
 data["stage"] = stage
 data["spec"] = slug
 data["updated_at"] = ts
+if branch:
+    data["branch"] = branch
 if stage not in data.get("completed", []):
     data.setdefault("completed", []).append(stage)
 json.dump(data, open(path, "w"), indent=2, ensure_ascii=False)
@@ -846,7 +930,8 @@ code-compass —— 个人 skill 库 CLI
   code-compass use-code-compass   注册并启用本 skill 库
   code-compass init               在当前项目初始化 .harness/ 与 AGENTS.md
   code-compass product-analysis [name]  柏拉图式发问，确定需求范围并生成 spec
-  code-compass dev|develop [name] 基于 spec 进行开发实现
+  code-compass dev|develop [name] 基于 spec 进行开发实现（自动创建 git worktree）
+  code-compass worktree [list|prune]  管理开发用 git worktree
    code-compass status [activate] 查看当前状态；activate 激活当前阶段自动化流程
    code-compass wiki [topic]       更新/重建项目 wiki（docs/）
    code-compass help               显示本帮助
@@ -862,6 +947,7 @@ case "$cmd" in
   init)                  cmd_init "$@" ;;
   product-analysis)      cmd_product_analysis "$@" ;;
   dev|develop)           cmd_dev "$@" ;;
+  worktree)              cmd_worktree "$@" ;;
   status)                cmd_status "$@" ;;
   wiki)                  cmd_wiki "$@" ;;
   help|--help|-h)        cmd_help ;;
