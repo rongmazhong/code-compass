@@ -75,6 +75,9 @@ npx skills add https://github.com/rongmazhong/code-compass
 | `code-compass init` | 在当前项目初始化 `.harness/`（state + rules + openspec），并向 `AGENTS.md` 注入路由 |
 | `code-compass product-analysis [name]` | 柏拉图式（苏格拉底式）发问，确定需求范围，生成 OpenSpec 风格的 spec 文档 |
 | `code-compass dev\|develop [name]` | 基于 spec 进行开发实现（自动创建 git worktree 隔离；计划 → TDD → 子代理 → 验证） |
+| `code-compass worktree [list\|prune]` | 管理开发用 git worktree（list 列出 / prune 清理失效注册） |
+| `code-compass vapd [ID]` | 记录/查看 VAPD 标识（VR需求 / VB缺陷 / VT任务），写入 `workflow-state.json` |
+| `code-compass commit <type> <描述>` | 按 `<type>: #{VAPD_ID}#<描述>` 规范提交（自动携带 vapd_id） |
 | `code-compass status [activate]` | 查看当前工作流状态；`activate` 激活当前阶段自动化流程（状态机思路参考 develop-workflow-rong，已内置，非加载该 skill） |
 | `code-compass wiki [topic]` | 更新/重建项目 wiki（`docs/`：概览/架构/模块/API + 索引） |
 
@@ -91,6 +94,27 @@ idea → product-analysis → planned → dev → implemented → qa → verifie
 
 ---
 
+## 📝 提交规范（VAPD）
+
+所有 git 提交必须遵循统一格式，便于需求/缺陷/任务追溯：
+
+```
+<type>: #{VAPD_ID}#<描述>
+```
+
+- **type**：`feat` / `fix` / `docs` / `refactor` / `test` / `chore` / `style` / `perf` / `build` / `ci`
+- **VAPD_ID**（自动携带）：取自 `.harness/state/workflow-state.json` 的 `vapd_id`
+  - 需求 `VR` 开头 / 缺陷 `VB` 开头 / 任务 `VT` 开头，如 `VR12345`
+  - 用户在需求描述中**显式给定**时，由 `product-analysis` 阶段用 `code-compass vapd <ID>` 记录；未记录时退化为 `<type>: <描述>`
+- 提交一律用 **`code-compass commit <type> <描述...>`**，勿手写 `git commit -m`。
+
+```bash
+code-compass vapd VR12345          # 记录需求标识
+code-compass commit feat 开发登录接口   # => feat: #VR12345#开发登录接口
+```
+
+---
+
 ## 📂 目录结构
 
 ```
@@ -102,7 +126,8 @@ code-compass/
 │   ├── use-code-compass/SKILL.md
 │   ├── init/SKILL.md
 │   ├── product-analysis/SKILL.md
-│   └── dev/SKILL.md
+│   ├── dev/SKILL.md
+│   └── commit/SKILL.md
 ├── harness/                 # init 注入目标项目的模板
 │   ├── AGENTS.md.harness
 │   ├── config.json

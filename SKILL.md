@@ -18,6 +18,9 @@ description: |
 | `init` | `skills/init/SKILL.md` | 初始化 `.harness/`（含 state/rules/openspec），注入 AGENTS.md |
 | `product-analysis` | `skills/product-analysis/SKILL.md` | 柏拉图式发问 → 需求范围 → spec 文档 |
 | `dev` / `develop` | `skills/dev/SKILL.md` | 基于 spec 的开发实现（自动 git worktree 隔离） |
+| `worktree [list\|prune]` | — | 管理开发用 git worktree |
+| `vapd [ID]` | `skills/commit/SKILL.md` | 记录/查看 VAPD 标识（VR需求/VB缺陷/VT任务） |
+| `commit <type> <描述>` | `skills/commit/SKILL.md` | 按 `<type>: #{VAPD_ID}#<描述>` 规范提交 |
 | `status [activate]` | `skills/status/SKILL.md` | 查看状态 / 激活当前阶段自动化流程 |
 | `wiki [topic]` | `skills/wiki/SKILL.md` | 更新/重建项目 wiki（docs/） |
 

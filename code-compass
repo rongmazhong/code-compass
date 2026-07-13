@@ -16,6 +16,8 @@
 #   product-analysis  进入柏拉图式发问，确定需求范围并生成 spec
 #   dev|develop        基于 spec 进行开发实现（自动创建 git worktree）
 #   worktree [list|prune]  管理开发用 git worktree
+#   vapd [ID]          记录/查看 VAPD 标识（VR需求/VB缺陷/VT任务）
+#   commit <type> <描述>  按 <type>: #{VAPD_ID}#<描述> 规范提交
 #   wiki [topic]       更新/重建项目 wiki（docs/ 概览/架构/模块/API + 索引）
 #   help               显示帮助
 
@@ -128,7 +130,15 @@ cmd_init() {
 # product-analysis : 柏拉图式发问 -> 需求范围 -> spec 文档
 # ---------------------------------------------------------------------------
 cmd_product_analysis() {
-  local name="${1:-}"
+  local name="" vapd=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --vapd) vapd="${2:-}"; shift 2 ;;
+      --vapd=*) vapd="${1#--vapd=}"; shift ;;
+      -*) warn "未知选项: $1"; shift ;;
+      *) [ -z "$name" ] && name="$1"; shift ;;
+    esac
+  done
   [ -z "$name" ] && read -r -p "请输入本次变更名称 (kebab-case): " name
   [ -z "$name" ] && die "变更名称不能为空"
   local slug; slug="$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')"
@@ -143,6 +153,15 @@ cmd_product_analysis() {
 
   # 更新工作流状态
   _set_stage "$slug" "product-analysis"
+
+  # 记录 VAPD 标识（若显式给定）
+  if [ -n "$vapd" ]; then
+    if ! _is_vapd "$vapd"; then
+      die "VAPD ID 格式不正确：应以 VR（需求）/ VB（缺陷）/ VT（任务）开头，如 VR12345"
+    fi
+    _set_vapd "$vapd"
+    log "已记录 VAPD ID: $vapd"
+  fi
 
   cat <<EOF
 
@@ -218,6 +237,102 @@ cmd_worktree() {
       ;;
     *) die "未知动作: $action（可选 list / prune）" ;;
   esac
+}
+
+# ---------------------------------------------------------------------------
+# VAPD：需求/缺陷/任务标识（VR=需求 VB=缺陷 VT=任务）
+# ---------------------------------------------------------------------------
+_is_vapd() {
+  case "$1" in
+    VR*|VB*|VT*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+_set_vapd() {
+  local id="$1"
+  local state="$TARGET_DIR/.harness/state/workflow-state.json"
+  [ -f "$state" ] || cmd_init >/dev/null 2>&1
+  local ts; ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$state" "$id" "$ts" <<'PY'
+import json, sys
+path, vid, ts = sys.argv[1:4]
+try:
+    data = json.load(open(path))
+except Exception:
+    data = {}
+data["vapd_id"] = vid
+data["updated_at"] = ts
+json.dump(data, open(path, "w"), indent=2, ensure_ascii=False)
+PY
+  else
+    warn "未找到 python3，跳过更新（请手动编辑 $state 的 vapd_id 字段）"
+  fi
+}
+
+_state_get() {
+  local field="$1" state="$TARGET_DIR/.harness/state/workflow-state.json"
+  [ -f "$state" ] || return 0
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$state" "$field" <<'PY'
+import json, sys
+try:
+    print(json.load(open(sys.argv[1])).get(sys.argv[2], ""))
+except Exception:
+    pass
+PY
+  fi
+}
+
+cmd_vapd() {
+  local id="${1:-}"
+  local state="$TARGET_DIR/.harness/state/workflow-state.json"
+  if [ -z "$id" ]; then
+    if [ -f "$state" ]; then
+      local cur; cur="$(_state_get vapd_id | tr -d '\n')"
+      log "当前 VAPD ID: ${cur:-（未设置）}"
+    else
+      warn "尚未 init，无 state 文件"
+    fi
+    return 0
+  fi
+  if ! _is_vapd "$id"; then
+    die "VAPD ID 格式不正确：应以 VR（需求）/ VB（缺陷）/ VT（任务）开头，如 VR12345"
+  fi
+  _set_vapd "$id"
+  log "已记录 VAPD ID: $id（写入 .harness/state/workflow-state.json）"
+  log "提交时将自动携带：<type>: #$id#<描述>"
+}
+
+# ---------------------------------------------------------------------------
+# commit : 按 <type>: #{VAPD_ID}#<描述> 规范提交
+# ---------------------------------------------------------------------------
+cmd_commit() {
+  local type="$1"; shift || true
+  [ -z "$type" ] && die "用法: code-compass commit <type> <描述...>（type: feat/fix/docs/refactor/...）"
+  case "$type" in
+    feat|fix|docs|refactor|test|chore|style|perf|build|ci) ;;
+    *) warn "非常规 type: $type（允许 feat/fix/docs/refactor 等）" ;;
+  esac
+  local desc="$*"
+  [ -z "$desc" ] && die "请填写提交描述"
+  local vapd=""
+  local state="$TARGET_DIR/.harness/state/workflow-state.json"
+  if [ -f "$state" ]; then
+    vapd="$(_state_get vapd_id | tr -d '\n')"
+  fi
+  local msg
+  if [ -n "$vapd" ]; then
+    msg="$type: #$vapd#$desc"
+  else
+    msg="$type: $desc"
+  fi
+  # 优先在当前目录（worktree）提交，否则回退到 TARGET_DIR
+  local repo="$TARGET_DIR"
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 && repo="$(pwd)"
+  log "提交信息: $msg"
+  git -C "$repo" commit -m "$msg"
 }
 
 # ---------------------------------------------------------------------------
@@ -932,6 +1047,8 @@ code-compass —— 个人 skill 库 CLI
   code-compass product-analysis [name]  柏拉图式发问，确定需求范围并生成 spec
   code-compass dev|develop [name] 基于 spec 进行开发实现（自动创建 git worktree）
   code-compass worktree [list|prune]  管理开发用 git worktree
+  code-compass vapd [ID]         记录/查看 VAPD 标识（VR需求/VB缺陷/VT任务）
+  code-compass commit <type> <描述>  按 <type>: #{VAPD_ID}#<描述> 规范提交
    code-compass status [activate] 查看当前状态；activate 激活当前阶段自动化流程
    code-compass wiki [topic]       更新/重建项目 wiki（docs/）
    code-compass help               显示本帮助
@@ -948,6 +1065,8 @@ case "$cmd" in
   product-analysis)      cmd_product_analysis "$@" ;;
   dev|develop)           cmd_dev "$@" ;;
   worktree)              cmd_worktree "$@" ;;
+  vapd)                  cmd_vapd "$@" ;;
+  commit)                cmd_commit "$@" ;;
   status)                cmd_status "$@" ;;
   wiki)                  cmd_wiki "$@" ;;
   help|--help|-h)        cmd_help ;;
