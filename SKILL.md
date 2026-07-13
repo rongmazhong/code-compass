@@ -10,6 +10,24 @@ description: |
 
 个人 skill 库与 CLI，提供一套 spec 驱动的开发方法论。
 
+## 首次使用：拉取完整工具
+
+`npx skills add rongmazhong/code-compass` 通过 skills 注册表**仅安装本 SKILL.md**，
+不会包含 `code-compass` 可执行文件、`skills/`、`harness/`、`templates/` 等配套内容。
+因此首次使用前需先引导一次（把完整工具克隆到本地并建好软链，仅需一次）：
+
+```bash
+CC_HOME="${CODE_COMPASS_HOME:-$HOME/.local/share/code-compass}"
+[ -d "$CC_HOME" ] || git clone https://github.com/rongmazhong/code-compass.git "$CC_HOME"
+mkdir -p "$HOME/.local/bin"
+ln -sfn "$CC_HOME/code-compass" "$HOME/.local/bin/code-compass"
+"$CC_HOME/code-compass" use-code-compass
+```
+
+> 引导完成后，`code-compass` 命令与全部子 skill 均可用；之后直接在 coding agent 中
+> 运行 `code-compass init` 等命令即可。若 `~/.local/bin` 不在 PATH，请将其加入
+> shell 配置（`export PATH="$HOME/.local/bin:$PATH"`）。
+
 ## 四个核心命令
 
 | 命令 | skill 指引 | 作用 |
