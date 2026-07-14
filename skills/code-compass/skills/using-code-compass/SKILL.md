@@ -15,7 +15,7 @@ description: |
 
 ## 触发条件
 
-- 用户运行 `code-compass using-code-compass`（旧别名 `use-code-compass` / `use` 仍可用）
+- 用户运行 `code-compass using-code-compass`
 - 用户说"启用 code-compass"、"加载我的 skill 库"、"接入指南针"
 - 会话开始时希望启用本库的方法论编排（先分析后开发的强制约束）
 

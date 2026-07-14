@@ -1313,7 +1313,7 @@ EOF
 }
 
 case "$cmd" in
-   use|use-code-compass|using-code-compass) cmd_use "$@" ;;
+   using-code-compass) cmd_use "$@" ;;
   init)                  cmd_init "$@" ;;
   product-analysis)      cmd_product_analysis "$@" ;;
   dev|develop)           cmd_dev "$@" ;;

@@ -14,7 +14,7 @@ description: |
 
 - 用户运行 `code-compass init`
 - 用户在新仓库中首次使用 code-compass
-- `using-code-compass`（旧别名 `use-code-compass`）检测到目标项目缺少 `.harness/`
+- `using-code-compass` 检测到目标项目缺少 `.harness/`
 
 ## 执行流程
 

@@ -21,7 +21,7 @@ description: |
 npx skills add rongmazhong/code-compass
 # 让 code-compass 命令可用（一次性）
 ln -sfn ~/.agents/skills/code-compass/code-compass ~/.local/bin/code-compass
-code-compass using-code-compass      # 链接子 skill 并完成当前项目初始化（旧别名 use-code-compass / use 仍可用）
+code-compass using-code-compass      # 链接子 skill 并完成当前项目初始化
 ```
 
 > 运行 `using-code-compass` 时也会自动补建上面的软链。若 `~/.local/bin` 不在 PATH，请将其加入 shell 配置。
