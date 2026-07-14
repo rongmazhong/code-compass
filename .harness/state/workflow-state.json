@@ -1,9 +1,14 @@
 {
   "tool": "code-compass",
-  "stage": "planned",
+  "stage": "summary",
   "completed": [
     "product-analysis",
-    "planned"
+    "planned",
+    "implemented",
+    "qa",
+    "verified",
+    "reviewed",
+    "summary"
   ],
   "spec": "using-code-compass-onboard",
   "branch": "",
