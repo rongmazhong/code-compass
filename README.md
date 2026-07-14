@@ -156,7 +156,10 @@ code-compass/
         │   ├── init/SKILL.md
         │   ├── product-analysis/SKILL.md
         │   ├── dev/SKILL.md
-        │   └── commit/SKILL.md
+        │   ├── commit/SKILL.md
+        │   ├── status/SKILL.md
+        │   ├── guard/SKILL.md
+        │   └── wiki/SKILL.md
         ├── harness/         # init 注入目标项目的模板
         │   ├── AGENTS.md.harness
         │   ├── config.json

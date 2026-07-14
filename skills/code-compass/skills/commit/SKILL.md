@@ -1,8 +1,7 @@
 ---
 name: commit
-description: |
-  按 code-compass 的 git 提交规范生成提交信息。当用户说"提交 / commit / 按规范提交"，
-  或开发阶段需要把 worktree 的改动提交时使用。提交格式为 <type>: #{VAPD_ID}#<描述>。
+description: >
+   按 `<type>: #{VAPD_ID}#<描述>` 规范提交，自动携带 VAPD 标识并做阶段校验。说"提交 / commit / 按规范提交"或开发后落库时触发。
 ---
 
 # commit —— VAPD 提交规范

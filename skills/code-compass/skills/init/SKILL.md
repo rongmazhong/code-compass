@@ -1,9 +1,7 @@
 ---
 name: init
-description: |
-  在当前项目初始化 code-compass 运行环境。当用户运行 `code-compass init`、
-   或在新项目开始使用 code-compass 时触发。创建 .harness/ 目录（state + rules）、
-  .harness/openspec/ 骨架，并向 AGENTS.md 注入 code-compass 路由指引。
+description: >
+   在当前项目初始化 code-compass 运行环境（.harness/ + docs/ + AGENTS.md 路由）。运行 `code-compass init` 或新项目首次使用时触发。
 ---
 
 # init
@@ -60,6 +58,7 @@ digraph cc {
   rankdir=LR;
   idea -> product-analysis -> planned -> dev -> implemented -> qa -> verified -> reviewed -> summary;
 }
+```
 
 ## 目录产出
 

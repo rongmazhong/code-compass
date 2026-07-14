@@ -1,10 +1,7 @@
 ---
 name: wiki
-description: |
-  更新或重建项目 wiki 文档。当用户运行 `code-compass wiki [topic]`、或说
-  "更新文档 / 补全架构说明 / 写 API 文档 / 同步 wiki" 时触发。
-  借鉴 superpowers 的「文档即代码」（docs as code）理念（方法论来源，非强制依赖）：文档随代码演进，
-  AI agent 通过 docs/INDEX.md 快速建立项目认知。
+description: >
+   更新或重建项目 wiki（docs/）。运行 `code-compass wiki [topic]` 或说"更新文档 / 写 API 文档 / 同步 wiki"时触发。
 ---
 
 # wiki —— 项目 wiki 更新
