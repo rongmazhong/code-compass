@@ -1,6 +1,6 @@
 {
   "tool": "code-compass",
-  "stage": "summary",
+  "stage": "implemented",
   "completed": [
     "product-analysis",
     "planned",
@@ -8,10 +8,11 @@
     "qa",
     "verified",
     "reviewed",
-    "summary"
+    "summary",
+    "dev"
   ],
-  "spec": "using-code-compass-onboard",
-  "branch": "",
+  "spec": "cli-robustness-hardening",
+  "branch": "feat/cli-robustness-hardening",
   "vapd_id": "",
-  "updated_at": "2026-07-14T10:03:38Z"
+  "updated_at": "2026-07-14T10:23:49Z"
 }
