@@ -67,6 +67,127 @@ warn() { printf '\033[33m[code-compass]\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[31m[code-compass]\033[0m %s\n' "$*" >&2; exit 1; }
 
 # ---------------------------------------------------------------------------
+# JSON 读写抽象层（R1：去除 python3 硬依赖）
+#   读取：优先 jq，其次 python3，最后纯 bash 扁平解析兜底
+#   写入：优先 jq（原子 tmp+mv），其次 python3，最后纯 bash best-effort
+#   当 jq 与 python3 均不可用时，给出降级提示而非 die 终止整个 CLI
+# ---------------------------------------------------------------------------
+# 返回同目录临时文件名（供原子写）
+_tmpfile() { printf '%s.tmp.%s' "$1" "$$"; }
+
+# 校验 JSON 文件合法性；jq/python3 皆无时 best-effort 视为合法
+_json_valid() {
+  local file="$1"
+  [ -f "$file" ] || return 1
+  if command -v jq >/dev/null 2>&1; then
+    jq empty "$file" >/dev/null 2>&1 && return 0 || return 1
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$file" <<'PY' && return 0 || return 1
+import json, sys
+try:
+    json.load(open(sys.argv[1])); sys.exit(0)
+except Exception:
+    sys.exit(1)
+PY
+  fi
+  return 0
+}
+
+# 读取扁平字段：jq -> python3 -> 纯 bash
+_json_get() {
+  local file="$1" field="$2"
+  [ -f "$file" ] || return 1
+  if command -v jq >/dev/null 2>&1; then
+    local v; v="$(jq -r --arg f "$field" '.[$f] // ""' "$file" 2>/dev/null)"
+    printf '%s\n' "$v"; return 0
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$file" "$field" <<'PY'
+import json, sys
+try: print(json.load(open(sys.argv[1])).get(sys.argv[2], ""))
+except Exception: pass
+PY
+    return 0
+  fi
+  _json_get_bash "$file" "$field"
+}
+
+# 纯 bash 扁平字段读取（仅支持 "field": "value" 或 "field": number）
+_json_get_bash() {
+  local file="$1" field="$2" line val
+  line="$(grep -oE "\"$field\"[[:space:]]*:[[:space:]]*\"?[^\",}\r]*\"?" "$file" 2>/dev/null | head -1)"
+  [ -z "$line" ] && return 0
+  val="${line#*:}"
+  val="${val#"${val%%[![:space:]]*}"}"
+  val="${val%"${val##*[![:space:]]}"}"
+  case "$val" in '"'*) val="${val#\"}"; val="${val%\"}" ;; esac
+  [ -n "$val" ] && printf '%s\n' "$val"
+}
+
+# 写入扁平字段（原子 tmp+mv）：jq -> python3 -> 纯 bash best-effort
+_json_set() {
+  local file="$1" field="$2" value="$3"
+  [ -f "$file" ] || return 1
+  if command -v jq >/dev/null 2>&1; then
+    local tmp; tmp="$(_tmpfile "$file")"
+    if jq --arg f "$field" --arg v "$value" '.[$f] = $v' "$file" > "$tmp" 2>/dev/null; then
+      mv "$tmp" "$file"; return 0
+    fi
+    rm -f "$tmp"
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$file" "$field" "$value" <<'PY'
+import json, sys
+p, f, v = sys.argv[1:4]
+try: d = json.load(open(p))
+except Exception: d = {}
+d[f] = v
+json.dump(d, open(p, "w"), indent=2, ensure_ascii=False)
+PY
+    return 0
+  fi
+  warn "未找到 jq/python3，使用纯 bash 兜底写入（可能不保证 JSON 格式完美）"
+  _json_set_bash "$file" "$field" "$value"
+}
+
+# 纯 bash 写入：移除原 field 行并追加新行（best-effort）
+_json_set_bash() {
+  local file="$1" field="$2" value="$3" tmp
+  tmp="$(_tmpfile "$file")"
+  grep -vE "\"$field\"[[:space:]]*:" "$file" 2>/dev/null > "$tmp" || true
+  printf '  "%s": "%s"\n' "$field" "$value" >> "$tmp"
+  mv "$tmp" "$file"
+  return 0
+}
+
+# 维护 completed 数组（jq/python3 优先；纯 bash 无法安全维护则跳过）
+_json_add_completed() {
+  local state="$1" stage="$2"
+  if command -v jq >/dev/null 2>&1; then
+    local tmp; tmp="$(_tmpfile "$state")"
+    if jq --arg s "$stage" '.completed |= (if . then (. + [$s] | unique) else [$s] end)' "$state" > "$tmp" 2>/dev/null; then
+      mv "$tmp" "$state"; return 0
+    fi
+    rm -f "$tmp"
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$state" "$stage" <<'PY'
+import json, sys
+p, s = sys.argv[1:3]
+try: d = json.load(open(p))
+except Exception: d = {}
+d.setdefault("completed", [])
+if s not in d["completed"]:
+    d["completed"].append(s)
+json.dump(d, open(p, "w"), indent=2, ensure_ascii=False)
+PY
+    return 0
+  fi
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # using-code-compass : 注册并启用 skill 库
 # ---------------------------------------------------------------------------
 cmd_use() {
@@ -177,11 +298,11 @@ cmd_product_analysis() {
   [ -z "$slug" ] && die "无法从 '$name' 生成合法 slug"
 
   local change_dir="$TARGET_DIR/.harness/openspec/changes/$slug"
-  mkdir -p "$change_dir/specs/<capability>"
+  mkdir -p "$change_dir/specs/core"
 
   cp "$CC_ROOT/templates/proposal.md" "$change_dir/proposal.md"
   cp "$CC_ROOT/templates/tasks.md"   "$change_dir/tasks.md"
-  cp "$CC_ROOT/templates/spec.md"    "$change_dir/specs/<capability>/spec.md"
+  cp "$CC_ROOT/templates/spec.md"    "$change_dir/specs/core/spec.md"
 
   # 更新工作流状态
   _set_stage "$slug" "product-analysis"
@@ -200,7 +321,7 @@ cmd_product_analysis() {
 ✅ 已创建变更工作区: .harness/openspec/changes/$slug/
    - proposal.md              (Why：意图/档位/决策)
    - tasks.md                 (实施计划，步骤 8 填充)
-   - specs/<capability>/spec.md  (spec 模板，步骤 6 改名并填写)
+   - specs/core/spec.md       (spec 模板，步骤 6 填写)
 
 下一步：请 agent 加载 skills/product-analysis/SKILL.md，按"八步流程"推进：
    1.需求诊断 → 2.并行探索 → 3.澄清发问 → 4.对抗验证+方案
@@ -236,10 +357,10 @@ cmd_dev() {
     if [ "$force" -eq 1 ]; then
       # 强制模式作为逃生舱：尚未运行 product-analysis 时，先脚手架变更工作区再进入 dev
       warn "未找到变更工作区，--force 模式下自动脚手架: $slug"
-      mkdir -p "$change_dir/specs/<capability>"
+      mkdir -p "$change_dir/specs/core"
       cp "$CC_ROOT/templates/proposal.md" "$change_dir/proposal.md"
       cp "$CC_ROOT/templates/tasks.md"   "$change_dir/tasks.md"
-      cp "$CC_ROOT/templates/spec.md"    "$change_dir/specs/<capability>/spec.md"
+      cp "$CC_ROOT/templates/spec.md"    "$change_dir/specs/core/spec.md"
     else
       die "变更不存在: $slug（请先运行 code-compass product-analysis $slug）"
     fi
@@ -247,7 +368,9 @@ cmd_dev() {
 
   # 闸门：禁止在未完成需求分析时进入开发（stage 仍处 idea / product-analysis）
   if [ "$force" -eq 0 ] && [ -f "$TARGET_DIR/.harness/state/workflow-state.json" ]; then
-    if ! _can_code; then
+    if [ "${CODE_COMPASS_GUARD:-}" = "off" ]; then
+      warn "CODE_COMPASS_GUARD=off：已绕过 dev 闸门（仅调试用）"
+    elif ! _can_code; then
       local st; st="$(_state_get stage | tr -d '\n')"
       die "⚠️  闸门拦截：当前阶段 '$st' 尚未生成已确认 spec，禁止进入 dev。
         > 先运行: code-compass product-analysis $slug
@@ -323,35 +446,14 @@ _set_vapd() {
   local state="$TARGET_DIR/.harness/state/workflow-state.json"
   [ -f "$state" ] || cmd_init >/dev/null 2>&1
   local ts; ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  if command -v python3 >/dev/null 2>&1; then
-    python3 - "$state" "$id" "$ts" <<'PY'
-import json, sys
-path, vid, ts = sys.argv[1:4]
-try:
-    data = json.load(open(path))
-except Exception:
-    data = {}
-data["vapd_id"] = vid
-data["updated_at"] = ts
-json.dump(data, open(path, "w"), indent=2, ensure_ascii=False)
-PY
-  else
-    die "未找到 python3，无法更新状态文件（请先安装 python3 后再试）"
-  fi
+  _json_set "$state" vapd_id "$id"
+  _json_set "$state" updated_at "$ts"
 }
 
 _state_get() {
   local field="$1" state="$TARGET_DIR/.harness/state/workflow-state.json"
   [ -f "$state" ] || return 0
-  if command -v python3 >/dev/null 2>&1; then
-    python3 - "$state" "$field" <<'PY'
-import json, sys
-try:
-    print(json.load(open(sys.argv[1])).get(sys.argv[2], ""))
-except Exception:
-    pass
-PY
-  fi
+  _json_get "$state" "$field"
 }
 
 # 依据当前阶段推导 agent 下一步应执行的动作
@@ -457,8 +559,10 @@ cmd_commit() {
     vapd="$(_state_get vapd_id | tr -d '\n')"
   fi
 
-  # 提交前阶段校验：禁止在 idea / product-analysis 阶段直接提交实现代码
-  if [ "$exempt" -eq 0 ] && [ -f "$state" ]; then
+  # R2: 环境变量豁免 / 提交前阶段校验：禁止在 idea / product-analysis 阶段直接提交
+  if [ "${CODE_COMPASS_GUARD:-}" = "off" ]; then
+    log "CODE_COMPASS_GUARD=off：已跳过提交期阶段校验（仅调试用）"
+  elif [ "$exempt" -eq 0 ] && [ -f "$state" ]; then
     case "$(_state_get stage | tr -d '\n')" in
       idea|product-analysis)
         die "⚠️  提交拦截：当前阶段 '$(_state_get stage | tr -d '\n')' 尚未完成需求分析，不能直接提交实现代码。
@@ -540,13 +644,16 @@ _stage_chain() {
   local cfg="$TARGET_DIR/.harness/config.json"
   [ -f "$cfg" ] || cfg="$CC_ROOT/harness/config.json"
   local stages=""
-  if command -v python3 >/dev/null 2>&1; then
+  if command -v jq >/dev/null 2>&1; then
+    stages="$(jq -r '.stages[]? // empty' "$cfg" 2>/dev/null)"
+  fi
+  if [ -z "$stages" ] && command -v python3 >/dev/null 2>&1; then
     stages="$(python3 - "$cfg" <<'PY'
 import json, sys
 try:
     print("\n".join(json.load(open(sys.argv[1])).get("stages", [])))
 except Exception:
-    print("")
+    pass
 PY
 )"
   fi
@@ -634,18 +741,32 @@ ACT
 _can_code() {
   local state="$TARGET_DIR/.harness/state/workflow-state.json"
   [ -f "$state" ] || return 2
+  if ! _json_valid "$state"; then
+    return 3
+  fi
   local stage; stage="$(_state_get stage | tr -d '\n')"
   case "$stage" in
     planned|dev|implemented|qa|verified|reviewed|summary) return 0 ;;
-    idea|product-analysis|*) return 1 ;;
+    *) return 1 ;;
   esac
 }
 
 cmd_guard() {
+  # R2: 环境变量豁免开关
+  if [ "${CODE_COMPASS_GUARD:-}" = "off" ]; then
+    log "CODE_COMPASS_GUARD=off：已绕过闸门（仅调试用）"
+    return 0
+  fi
   local state="$TARGET_DIR/.harness/state/workflow-state.json"
   if [ ! -f "$state" ]; then
     warn "未检测到 $state（项目尚未 init）。"
     warn "动手前请先运行 'code-compass init' 完成方法论初始化。"
+    return 1
+  fi
+  # R4: 区分"状态文件损坏"与"阶段偏离"
+  if ! _json_valid "$state"; then
+    warn "⚠️  状态文件损坏：$state 不是合法 JSON，无法校验闸门。"
+    warn "    请修复该文件，或删除后重新运行 code-compass init。"
     return 1
   fi
   local stage spec
@@ -682,26 +803,10 @@ cmd_status() {
   fi
 
   local stage spec branch updated
-  if command -v python3 >/dev/null 2>&1; then
-    local raw; raw="$(python3 - "$state" <<'PY'
-import json, sys
-d = json.load(open(sys.argv[1]))
-print(json.dumps({
-    "stage": d.get("stage",""),
-    "spec": d.get("spec",""),
-    "branch": d.get("branch",""),
-    "updated_at": d.get("updated_at",""),
-}, ensure_ascii=False))
-PY
-)"
-    stage="$(printf '%s' "$raw"   | python3 -c 'import json,sys;print(json.load(sys.stdin)["stage"])')"
-    spec="$(printf '%s' "$raw"    | python3 -c 'import json,sys;print(json.load(sys.stdin)["spec"])')"
-    branch="$(printf '%s' "$raw"  | python3 -c 'import json,sys;print(json.load(sys.stdin)["branch"])')"
-    updated="$(printf '%s' "$raw" | python3 -c 'import json,sys;print(json.load(sys.stdin)["updated_at"])')"
-  else
-    die "未找到 python3，无法解析状态文件（请先安装 python3 后再试）"
-    stage=""; spec=""; branch=""; updated=""
-  fi
+  stage="$(_json_get "$state" stage)"
+  spec="$(_json_get "$state" spec)"
+  branch="$(_json_get "$state" branch)"
+  updated="$(_json_get "$state" updated_at)"
 
   local chain; chain="$(_stage_chain)"
 
@@ -1282,9 +1387,15 @@ _setup_worktree() {
   local slug="$1"
   WT_BRANCH="feat/$slug"
   WT_PATH=""
-  local parent; parent="$(cd "$(dirname "$TARGET_DIR")" && pwd)"
-  local wt_root="$parent/worktrees"
+  local wt_root="$TARGET_DIR/.worktrees"
   WT_PATH="$wt_root/$slug"
+
+  # 将 .worktrees/ 加入 .gitignore（幂等），避免 worktree 目录被纳入版本控制
+  if [ -f "$TARGET_DIR/.gitignore" ]; then
+    grep -qxF ".worktrees/" "$TARGET_DIR/.gitignore" 2>/dev/null || printf '.worktrees/\n' >> "$TARGET_DIR/.gitignore"
+  else
+    printf '.worktrees/\n' > "$TARGET_DIR/.gitignore"
+  fi
 
   # 非 git 仓库：退回当前目录直接开发
   if ! git -C "$TARGET_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -1326,27 +1437,11 @@ _set_stage() {
   local state="$TARGET_DIR/.harness/state/workflow-state.json"
   [ -f "$state" ] || cmd_init >/dev/null 2>&1
   local ts; ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  if command -v python3 >/dev/null 2>&1; then
-    python3 - "$state" "$stage" "$slug" "$ts" "$branch" <<'PY'
-import json, sys
-path, stage, slug, ts, branch = sys.argv[1:6]
-try:
-    data = json.load(open(path))
-except Exception:
-    data = {}
-data["stage"] = stage
-data["spec"] = slug
-data["updated_at"] = ts
-if branch:
-    data["branch"] = branch
-if stage not in data.get("completed", []):
-    data.setdefault("completed", []).append(stage)
-json.dump(data, open(path, "w"), indent=2, ensure_ascii=False)
-print(open(path).read())
-PY
-  else
-    die "未找到 python3，无法更新状态文件（请先安装 python3 后再试）"
-  fi
+  _json_set "$state" stage "$stage"
+  _json_set "$state" spec "$slug"
+  _json_set "$state" updated_at "$ts"
+  [ -n "$branch" ] && _json_set "$state" branch "$branch"
+  _json_add_completed "$state" "$stage"
 }
 
 cmd_help() {
