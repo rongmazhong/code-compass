@@ -66,7 +66,10 @@ code-compass use-code-compass
 # 2. 辨明方向：发问 → 生成 OpenSpec 风格的 spec
 执行 `code-compass product-analysis feature-xxx`
 
-# 3. 扬帆起航：基于 spec 实现 → 推进 workflow-state
+# 3. 闸门校验：动手前确认阶段是否允许（偏离会拦截）
+执行 `code-compass guard`   # 或 `code-compass status --guard`
+
+# 4. 扬帆起航：基于 spec 实现 → 推进 workflow-state
 `code-compass dev feature-xxx`
 ```
 
@@ -82,8 +85,9 @@ code-compass use-code-compass
 | `code-compass dev\|develop [name]` | 基于 spec 进行开发实现（自动创建 git worktree 隔离；计划 → TDD → 子代理 → 验证） |
 | `code-compass worktree [list\|prune]` | 管理开发用 git worktree（list 列出 / prune 清理失效注册） |
 | `code-compass vapd [ID]` | 记录/查看 VAPD 标识（VR需求 / VB缺陷 / VT任务），写入 `workflow-state.json` |
-| `code-compass commit <type> <描述>` | 按 `<type>: #{VAPD_ID}#<描述>` 规范提交（自动携带 vapd_id） |
+| `code-compass commit [--exempt] <type> <描述>` | 按 `<type>: #{VAPD_ID}#<描述>` 规范提交（自动携带 vapd_id，并提交前阶段校验） |
 | `code-compass status [activate]` | 查看当前工作流状态；`activate` 激活当前阶段自动化流程（状态机思路参考 develop-workflow-rong，已内置，非加载该 skill） |
+| `code-compass guard` | **阶段闸门**：动手前校验当前阶段是否允许开发，仍处 `idea`/`product-analysis` 时拦截偏离 |
 | `code-compass wiki [topic]` | 更新/重建项目 wiki（`docs/`：概览/架构/模块/API + 索引） |
 
 ---
@@ -96,6 +100,22 @@ code-compass use-code-compass
 ```
 idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → summary
 ```
+
+---
+
+## 🚧 强制约束（先分析后开发）
+
+指南针不只是「提供」方法论，更会**强制** agent 走：任何代码改动意图，默认先经
+`product-analysis` 生成已确认 spec，阶段到达 `planned` 后才允许 `dev`。把软纪律硬化为带拦截的硬约束：
+
+- **触发词 → 必调 skill**：检测到「新功能 / 做客户端 / 实现 X」等意图时，优先调 `product-analysis` 而非直接编辑。
+- **「继续 / 直接做」闸门**：`stage` 仍处 `idea` / `product-analysis` 时，用户说"继续 / 做吧"也不得直接进入编码，须先产出 spec 骨架或澄清清单。
+- **阶段闸门 `guard`**：动手前跑 `code-compass guard`，仍处分析前阶段会输出黄色提醒并以**非 0 退出**，视为偏离。
+- **`dev` 拦截**：阶段未到 `planned` 无法直接进入开发（可用 `code-compass dev --force` 豁免）。
+- **`commit` 校验**：处于 `idea` / `product-analysis` 阶段直接提交实现代码会被拦截（可用 `code-compass commit --exempt` 豁免）。
+- **豁免机制**：`dev --force` / `commit --exempt` / 环境变量 `CODE_COMPASS_GUARD=off`（关闭全部闸门，仅调试用）。
+
+`init` 会向 `AGENTS.md` 注入这份强制约束，并生成 `.harness/rules/guard.md` 作为契约文档。
 
 ---
 
@@ -155,7 +175,7 @@ your-project/
 ├── .harness/
 │   ├── config.json
 │   ├── state/workflow-state.json
-│   ├── rules/{structure.md,workflow.md,coding.md}
+│   ├── rules/{structure.md,workflow.md,coding.md,guard.md}
 │   └── openspec/           # spec 驱动变更管理（OpenSpec 风格）
 │       ├── project.md
 │       ├── specs/

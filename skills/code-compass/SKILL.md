@@ -1,14 +1,17 @@
 ---
 name: code-compass
 description: |
-  个人 skill 库与 CLI 的总入口。借鉴 superpowers / gstack / OpenSpec / develop-workflow-rong 的方法论（均已内化为自包含流程，非强制依赖）。
-   当用户希望启用 code-compass、运行其命令（use-code-compass / init / product-analysis / dev），
-  或在会话中需要按本库方法论（柏拉图式发问、spec 驱动开发、状态机编排）工作时加载。
+  个人 skill 库与 CLI 的总入口，提供一套 spec 驱动、状态机编排的开发方法论（已内化为自包含流程，
+  非强制依赖外部 skill）。当用户希望启用 code-compass、运行其命令（use-code-compass / init /
+  product-analysis / dev / guard），或在会话中需要按本库方法论（柏拉图式发问、spec 驱动开发、
+  状态机编排、**先分析后开发的强制约束**）工作时加载。任何代码改动意图默认先走 product-analysis → dev。
 ---
 
 # code-compass
 
-个人 skill 库与 CLI，提供一套 spec 驱动的开发方法论。
+个人 skill 库与 CLI，提供一套 spec 驱动、状态机编排的开发方法论。
+**方法论是默认硬约束**：动手写代码前必须先经 `product-analysis` 生成已确认 spec，
+`code-compass guard` 会在阶段不符时拦截偏离。
 
 ## 安装与启用
 
@@ -33,16 +36,19 @@ code-compass use-code-compass      # 链接子 skill 并完成当前项目初始
 | `dev` / `develop` | `skills/dev/SKILL.md` | 基于 spec 的开发实现（自动 git worktree 隔离） |
 | `worktree [list\|prune]` | — | 管理开发用 git worktree |
 | `vapd [ID]` | `skills/commit/SKILL.md` | 记录/查看 VAPD 标识（VR需求/VB缺陷/VT任务） |
-| `commit <type> <描述>` | `skills/commit/SKILL.md` | 按 `<type>: #{VAPD_ID}#<描述>` 规范提交 |
+| `commit <type> <描述>` | `skills/commit/SKILL.md` | 按 `<type>: #{VAPD_ID}#<描述>` 规范提交（含阶段校验） |
 | `status [activate]` | `skills/status/SKILL.md` | 查看状态 / 激活当前阶段自动化流程 |
+| `guard` | `skills/status/SKILL.md` | 闸门校验：当前阶段是否允许动手，偏离则拦截 |
 | `wiki [topic]` | `skills/wiki/SKILL.md` | 更新/重建项目 wiki（docs/） |
 
 ## 使用方式
 
-agent 加载本 skill 后，依据用户意图选择对应子命令：
-- 新建/接入项目 → `init`
-- 需求不明确 → `product-analysis`（柏拉图式发问）
-- 已有 spec 要落地 → `dev`
+方法论是**默认硬约束**：任何代码改动意图，先走 `product-analysis → planned → dev` 阶段机，
+未生成 spec 不得直接编码。agent 加载本 skill 后，依据用户意图选择对应子命令：
+- 新建/接入项目 → `init`（注入强制约束、引导补全 overview、生成 rules/guard.md）
+- 需求不明确 / 用户说"新功能、做客户端、实现 X" → `product-analysis`（柏拉图式发问）
+- 动手前闸门校验 → `guard`（偏离会拦截，exit 非 0）
+- 已有 spec 要落地 → `dev`（阶段未到 planned 会被拦截，可用 `dev --force` 豁免）
 
 每个子命令的详细方法论见 `skills/<name>/SKILL.md`。阶段进度统一维护在
 `.harness/state/workflow-state.json`，阶段链：

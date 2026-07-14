@@ -42,6 +42,16 @@ refactor: 抽离配置加载逻辑
 
 4. **不要**直接手写 `git commit -m`，以免漏带 VAPD 标识。
 
+## 提交前阶段校验（强制）
+
+`commit` 在提交前读取 `.harness/state/workflow-state.json`，若 `stage` 仍处
+`idea` / `product-analysis`（尚未完成需求分析），**直接拦截**提交实现代码，
+从源头杜绝"跳过分析就开发"。提示先运行 `code-compass product-analysis <name>`。
+
+- 豁免：`code-compass commit --exempt <type> <描述>` 跳过阶段校验（如一次性脚手架、hotfix），
+  需在回复中说明豁免理由。
+- 关闭全部闸门（不推荐，仅调试）：环境变量 `CODE_COMPASS_GUARD=off`。
+
 ## 记录 VAPD 标识
 
 若用户在需求描述中显式给定 VAPD ID，先运行 `code-compass vapd <ID>` 写入 state，

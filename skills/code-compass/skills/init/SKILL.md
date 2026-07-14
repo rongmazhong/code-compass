@@ -27,19 +27,25 @@ description: |
    - `rules/workflow.md` ：开发流程（构建/测试/检查命令、分支与提交约定）
    - `rules/coding.md`   ：编码约束（通用原则 + 语言相关规则）
 3. 创建 `.harness/openspec/` 骨架：
-   - `.harness/openspec/specs/`：当前能力 spec（truth）
-   - `.harness/openspec/changes/`：待实现的变更提案
-   - `.harness/openspec/project.md`：项目级上下文
+    - `.harness/openspec/specs/`：当前能力 spec（truth）
+    - `.harness/openspec/changes/`：待实现的变更提案
+    - `.harness/openspec/project.md`：项目级上下文
 4. 生成 `docs/` 项目 wiki（基于探测填充脚手架，agent 随后补全）：
-   - `docs/INDEX.md`：索引，AI agent 先读本文件再深入各文档
-   - `docs/overview.md`：项目概览（技术栈、快速开始）
-   - `docs/architecture.md`：架构设计（目录布局、数据流）
-   - `docs/modules.md`：核心模块（目录职责与边界）
-   - `docs/api.md`：功能清单及 API 接口文档
-4. 向 `AGENTS.md` 注入 code-compass 路由段（用 `MARKER` 包裹，避免重复）：
-    - 说明五个命令：`use-code-compass` / `init` / `product-analysis` / `dev` / `wiki`
-   - 说明 `.harness/state/workflow-state.json` 的阶段含义
-   - 说明 `.harness/rules/` 三文件为开发/审查须遵循的项目规则
+    - `docs/INDEX.md`：索引，AI agent 先读本文件再深入各文档
+    - `docs/overview.md`：项目概览（技术栈、快速开始）
+    - `docs/architecture.md`：架构设计（目录布局、数据流）
+    - `docs/modules.md`：核心模块（目录职责与边界）
+    - `docs/api.md`：功能清单及 API 接口文档
+5. **交互式补全 `docs/overview.md`**（仅 TTY）：init 以提问方式逼出"项目目的 / 技术栈 /
+   目标用户 / 范围"，写入概览，并在文末追加「⏭️ 下一步：运行 `code-compass product-analysis`」
+   作为启动提示；非交互（管道 / agent 调用）时保留脚手架占位，不卡流程。
+6. 生成 `.harness/rules/guard.md`：方法论**强制契约**（先分析后开发的硬默认、触发词→必调
+   skill 映射、「继续/直接做」闸门、偏离提醒、豁免机制），把软纪律硬化为 agent 必须遵循的约束。
+7. 向 `AGENTS.md` 注入 code-compass 路由段（用 `MARKER` 包裹，避免重复）：
+    - 声明方法论为**强制默认约束**（先分析后开发），而非可选建议
+    - 说明命令（含 `guard`）、`.harness/state/workflow-state.json` 阶段含义
+    - 嵌入「触发词 → 必调 skill」硬映射表与「继续/直接做」闸门规则
+    - 说明 `.harness/rules/` 四文件（含 `guard.md`）为开发/审查须遵循的项目规则
 
 ## 不覆盖原则
 

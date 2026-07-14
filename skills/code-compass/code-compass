@@ -18,6 +18,7 @@
 #   worktree [list|prune]  管理开发用 git worktree
 #   vapd [ID]          记录/查看 VAPD 标识（VR需求/VB缺陷/VT任务）
 #   commit <type> <描述>  按 <type>: #{VAPD_ID}#<描述> 规范提交
+#   guard              闸门校验：当前阶段是否允许动手，偏离则拦截
 #   wiki [topic]       更新/重建项目 wiki（docs/ 概览/架构/模块/API + 索引）
 #   help               显示帮助
 
@@ -111,9 +112,15 @@ cmd_init() {
   # 探测项目并生成 rules/ 规则文件
   _detect_project
   _gen_rules "$rules_dir"
+  _gen_guard_rules "$rules_dir"
 
   # 生成 docs/ 项目 wiki（概览/架构/核心模块/功能与 API + 索引）
   _gen_docs "$TARGET_DIR/docs"
+
+  # 交互式补全 docs/overview.md（仅 TTY，避免非交互调用卡住），并写入 product-analysis 启动提示
+  if [ -t 0 ]; then
+    _fill_overview "$TARGET_DIR/docs"
+  fi
 
   # openspec 骨架（置于 .harness/openspec 下）
   mkdir -p "$TARGET_DIR/.harness/openspec/specs" "$TARGET_DIR/.harness/openspec/changes"
@@ -201,7 +208,18 @@ EOF
 # dev|develop : 基于 spec 进行开发实现
 # ---------------------------------------------------------------------------
 cmd_dev() {
-  local slug="${1:-}"
+  local force=0
+  # 解析 --force 豁免（其余参数视为 slug）
+  local pos=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --force) force=1; shift ;;
+      -*) warn "未知选项: $1"; shift ;;
+      *) pos+=("$1"); shift ;;
+    esac
+  done
+  local slug="${pos[0]:-}"
+
   if [ -z "$slug" ]; then
     local latest; latest="$(ls -1 "$TARGET_DIR/.harness/openspec/changes" 2>/dev/null | tail -1 || true)"
     [ -z "$latest" ] && die "未找到任何变更，请先运行: code-compass product-analysis <name>"
@@ -209,7 +227,33 @@ cmd_dev() {
     warn "未指定变更，自动选择最新一个: $slug"
   fi
   local change_dir="$TARGET_DIR/.harness/openspec/changes/$slug"
-  [ -d "$change_dir" ] || die "变更不存在: $slug"
+  if [ ! -d "$change_dir" ]; then
+    if [ "$force" -eq 1 ]; then
+      # 强制模式作为逃生舱：尚未运行 product-analysis 时，先脚手架变更工作区再进入 dev
+      warn "未找到变更工作区，--force 模式下自动脚手架: $slug"
+      mkdir -p "$change_dir/specs/<capability>"
+      cp "$CC_ROOT/templates/proposal.md" "$change_dir/proposal.md"
+      cp "$CC_ROOT/templates/tasks.md"   "$change_dir/tasks.md"
+      cp "$CC_ROOT/templates/spec.md"    "$change_dir/specs/<capability>/spec.md"
+    else
+      die "变更不存在: $slug（请先运行 code-compass product-analysis $slug）"
+    fi
+  fi
+
+  # 闸门：禁止在未完成需求分析时进入开发（stage 仍处 idea / product-analysis）
+  if [ "$force" -eq 0 ] && [ -f "$TARGET_DIR/.harness/state/workflow-state.json" ]; then
+    if ! _can_code; then
+      local st; st="$(_state_get stage | tr -d '\n')"
+      die "⚠️  闸门拦截：当前阶段 '$st' 尚未生成已确认 spec，禁止进入 dev。
+        > 先运行: code-compass product-analysis $slug
+        > 如需强制绕过: code-compass dev --force $slug （请在回复中说明豁免理由）"
+    fi
+    # 存在 state 且 stage>=planned，但变更工作区无 spec 文件，也视为偏离
+    if ! ls "$change_dir"/specs/*/spec.md >/dev/null 2>&1; then
+      warn "⚠️  变更工作区 $slug 未找到 specs/*/spec.md，疑似未生成 spec。"
+      warn "    建议先补完 product-analysis 的 spec，再进入 dev。"
+    fi
+  fi
 
   # 创建/复用 git worktree，隔离开发环境
   _setup_worktree "$slug"
@@ -329,19 +373,40 @@ cmd_vapd() {
 # commit : 按 <type>: #{VAPD_ID}#<描述> 规范提交
 # ---------------------------------------------------------------------------
 cmd_commit() {
-  local type="$1"; shift || true
-  [ -z "$type" ] && die "用法: code-compass commit <type> <描述...>（type: feat/fix/docs/refactor/...）"
+  local exempt=0
+  local type="" desc=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --exempt) exempt=1; shift ;;
+      -*) warn "未知选项: $1"; shift ;;
+      *)
+        if [ -z "$type" ]; then type="$1"; else desc="$desc $1"; fi
+        shift ;;
+    esac
+  done
+  [ -z "$type" ] && die "用法: code-compass commit [--exempt] <type> <描述...>（type: feat/fix/docs/refactor/...）"
   case "$type" in
     feat|fix|docs|refactor|test|chore|style|perf|build|ci) ;;
     *) warn "非常规 type: $type（允许 feat/fix/docs/refactor 等）" ;;
   esac
-  local desc="$*"
+  desc="${desc# }"
   [ -z "$desc" ] && die "请填写提交描述"
   local vapd=""
   local state="$TARGET_DIR/.harness/state/workflow-state.json"
   if [ -f "$state" ]; then
     vapd="$(_state_get vapd_id | tr -d '\n')"
   fi
+
+  # 提交前阶段校验：禁止在 idea / product-analysis 阶段直接提交实现代码
+  if [ "$exempt" -eq 0 ] && [ -f "$state" ]; then
+    case "$(_state_get stage | tr -d '\n')" in
+      idea|product-analysis)
+        die "⚠️  提交拦截：当前阶段 '$(_state_get stage | tr -d '\n')' 尚未完成需求分析，不能直接提交实现代码。
+          > 先运行: code-compass product-analysis <name>
+          > 确需绕过: code-compass commit --exempt $type $desc" ;;
+    esac
+  fi
+
   local msg
   if [ -n "$vapd" ]; then
     msg="$type: #$vapd#$desc"
@@ -498,9 +563,54 @@ ACT
   esac
 }
 
+# ---------------------------------------------------------------------------
+# guard : 阶段闸门校验（把软纪律硬化为硬约束）
+# ---------------------------------------------------------------------------
+
+# 判断当前阶段是否允许"动手写代码"：
+#   返回 0 = 允许（已到 planned 及之后）
+#   返回 1 = 拦截（仍处 idea / product-analysis，需先生成 spec）
+#   返回 2 = 未初始化（无 state 文件）
+_can_code() {
+  local state="$TARGET_DIR/.harness/state/workflow-state.json"
+  [ -f "$state" ] || return 2
+  local stage; stage="$(_state_get stage | tr -d '\n')"
+  case "$stage" in
+    planned|dev|implemented|qa|verified|reviewed|summary) return 0 ;;
+    idea|product-analysis|*) return 1 ;;
+  esac
+}
+
+cmd_guard() {
+  local state="$TARGET_DIR/.harness/state/workflow-state.json"
+  if [ ! -f "$state" ]; then
+    warn "未检测到 $state（项目尚未 init）。"
+    warn "动手前请先运行 'code-compass init' 完成方法论初始化。"
+    return 1
+  fi
+  local stage spec
+  stage="$(_state_get stage | tr -d '\n')"
+  spec="$(_state_get spec | tr -d '\n')"
+  if _can_code; then
+    log "✅ 闸门通过：当前阶段 '$stage'，允许进入开发。"
+    [ -n "$spec" ] && log "   关联 spec: $spec"
+    return 0
+  fi
+  warn "⚠️  你正在偏离方法论：当前阶段 '$stage' 仍在分析之前，尚未生成已确认 spec。"
+  warn "    禁止直接进入编码。请先运行: code-compass product-analysis <name>"
+  warn "    确需绕过可用: code-compass dev --force <name>（并说明豁免理由）"
+  return 1
+}
+
 cmd_status() {
   local mode="${1:-}"
   local state="$TARGET_DIR/.harness/state/workflow-state.json"
+
+  # guard 模式：仅做闸门校验并退出（供 agent 动手前调用）
+  if [ "$mode" = "guard" ] || [ "$mode" = "--guard" ]; then
+    cmd_guard
+    return $?
+  fi
 
   if [ ! -f "$state" ]; then
     warn "未检测到 $state（项目尚未 init）。"
@@ -563,17 +673,26 @@ PY
   $line
 EOF
 
+   # 偏离提醒：仍处 idea/product-analysis 时，显式警告尚未生成 spec
+  case "$stage" in
+    idea|product-analysis)
+      warn "⚠️  当前阶段 '$stage' 尚未生成已确认 spec：动手写代码前应先走 product-analysis。"
+      warn "    运行 'code-compass guard' 校验阶段；用 'code-compass product-analysis <name>' 收敛需求。"
+      ;;
+  esac
+
   if [ "$mode" = "activate" ] || [ "$mode" = "--activate" ]; then
     cat <<EOF
 
 🚀 激活自动化流程（参考 develop-workflow-rong 状态机）
-  当前阶段: ${stage:-idea}
+   当前阶段: ${stage:-idea}
 $(_stage_action "${stage:-idea}")
-  提示：agent 加载本步骤对应 skill，执行后将 stage 写入 workflow-state.json，
-  下次运行 'code-compass status activate' 即自动从断点续跑。
+   提示：agent 加载本步骤对应 skill，执行后将 stage 写入 workflow-state.json，
+   下次运行 'code-compass status activate' 即自动从断点续跑。
 EOF
   else
     log "运行 'code-compass status activate' 可查看当前阶段应执行的自动化动作。"
+    log "运行 'code-compass guard' 可校验当前阶段是否允许动手（偏离会拦截）。"
   fi
 }
 
@@ -792,6 +911,119 @@ PY
       ;;
     *) echo "- （未识别语言，请补充对应约定）" ;;
   esac
+}
+
+# ---------------------------------------------------------------------------
+# 生成 rules/guard.md：方法论强制契约（闸门、触发映射、豁免）
+# ---------------------------------------------------------------------------
+_gen_guard_rules() {
+  local rules_dir="$1"
+  if [ -f "$rules_dir/guard.md" ]; then
+    warn "$rules_dir/guard.md 已存在，跳过"
+    return 0
+  fi
+  cat > "$rules_dir/guard.md" <<'EOF'
+# 方法论强制契约（guard）
+
+> 由 `code-compass init` 生成。本文件把「方法论优先」从软建议硬化为 agent 必须遵循的约束。
+
+## 1. 硬默认：先分析后开发
+
+任何代码改动意图，默认先走 `product-analysis → planned → dev` 阶段机：
+
+```
+idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → summary
+```
+
+- `stage` 仍在 `idea` / `product-analysis` = 尚未确认 spec，**禁止进入编码**。
+- 动手前先跑 `code-compass guard`（或 `code-compass status --guard`）做闸门校验。
+
+## 2. 触发词 → 必调 skill
+
+| 意图 / 触发词 | 必调 skill |
+|---------------|-----------|
+| 新功能 / 做客户端 / 加能力 / 实现 X / 需求 | `product-analysis` |
+| 改需求 / 调范围 / 设计一下 / 出方案 | `product-analysis` |
+| 按 spec 实现 / 开始开发 / 进入开发 | `dev` |
+| 提交 / commit | `commit` |
+| 查看进度 / 继续流程 | `status` / `status activate` |
+| 我要动手 / 是否可编码 | `guard` |
+
+检测到代码改动意图且尚无 spec 时，**优先调 `product-analysis`**，而非直接编辑。
+
+## 3. 「继续 / 直接做」闸门
+
+`stage` 仍处 `idea` / `product-analysis` 时，用户说「继续 / 直接做 / 做吧」等，
+agent 不得直接进入编码；先产出 spec 骨架或澄清清单，再继续。
+
+## 4. 偏离提醒
+
+准备写代码而 `state` 仍处 `idea` / `product-analysis`，`code-compass guard` 会输出黄色提醒
+并以非 0 退出（视为偏离）。agent 应停下先走 `product-analysis`，或显式豁免并说明理由。
+
+## 5. 豁免机制
+
+- `code-compass dev --force`：强制进入开发。
+- `code-compass commit --exempt <type> <描述>`：跳过提交期阶段校验。
+- 环境变量 `CODE_COMPASS_GUARD=off`：关闭全部闸门（仅调试用）。
+EOF
+  log "已生成 $rules_dir/guard.md"
+}
+
+# ---------------------------------------------------------------------------
+# 交互式补全 docs/overview.md（仅 TTY 调用），并写入 product-analysis 启动提示
+# ---------------------------------------------------------------------------
+_fill_overview() {
+  local docs_dir="$1"
+  [ -f "$docs_dir/overview.md" ] || return 0
+  log "init 将引导补全 docs/overview.md（并写入「下一步运行 product-analysis」启动提示）"
+  local purpose tech user scope
+  read -r -p "项目是做什么的（一句话）: " purpose
+  read -r -p "技术栈（如 Node/React，可留空用探测值）: " tech
+  read -r -p "目标用户是谁: " user
+  read -r -p "本次范围 / 目标（可留空）: " scope
+  [ -z "$tech" ] && tech="$PROJ_TECH"
+  cat > "$docs_dir/overview.md" <<EOF
+# 项目概览
+
+> 由 code-compass init 引导生成。
+
+## 这是什么
+
+${purpose:-（待补充）}
+
+## 目标用户
+
+${user:-（待补充）}
+
+## 技术栈
+
+- 语言：$PROJ_LANG
+- 构建系统：${tech:-（待补充）}
+- 关键依赖：（待补充）
+
+## 范围 / 目标
+
+${scope:-（待补充）}
+
+## 快速开始
+
+- 构建：${PROJ_BUILD:-（待补充）}
+- 测试：${PROJ_TEST:-（待补充）}
+- 运行：（待补充）
+
+## ⏭️ 下一步
+
+代码改动默认先走方法论：**运行 \`code-compass product-analysis <name>\`** 收敛需求、生成 spec，
+再 \`code-compass dev <name>\` 实现。直接用 \`code-compass guard\` 校验阶段是否可动手。
+
+## 相关文档
+
+- 架构设计：architecture.md
+- 核心模块：modules.md
+- 功能与 API：api.md
+EOF
+  log "已补全 docs/overview.md 并写入「下一步：product-analysis」启动提示"
 }
 
 # ---------------------------------------------------------------------------
@@ -1068,8 +1300,9 @@ code-compass —— 个人 skill 库 CLI
   code-compass dev|develop [name] 基于 spec 进行开发实现（自动创建 git worktree）
   code-compass worktree [list|prune]  管理开发用 git worktree
   code-compass vapd [ID]         记录/查看 VAPD 标识（VR需求/VB缺陷/VT任务）
-  code-compass commit <type> <描述>  按 <type>: #{VAPD_ID}#<描述> 规范提交
+   code-compass commit [--exempt] <type> <描述>  按 <type>: #{VAPD_ID}#<描述> 规范提交（含阶段校验）
    code-compass status [activate] 查看当前状态；activate 激活当前阶段自动化流程
+   code-compass guard             闸门校验：当前阶段是否允许动手，偏离则拦截
    code-compass wiki [topic]       更新/重建项目 wiki（docs/）
    code-compass help               显示本帮助
 
@@ -1087,8 +1320,9 @@ case "$cmd" in
   worktree)              cmd_worktree "$@" ;;
   vapd)                  cmd_vapd "$@" ;;
   commit)                cmd_commit "$@" ;;
-  status)                cmd_status "$@" ;;
-  wiki)                  cmd_wiki "$@" ;;
-  help|--help|-h)        cmd_help ;;
+   status)                cmd_status "$@" ;;
+   guard)                 cmd_guard "$@" ;;
+   wiki)                  cmd_wiki "$@" ;;
+   help|--help|-h)        cmd_help ;;
   *)                     warn "未知命令: $cmd"; cmd_help; exit 1 ;;
 esac
