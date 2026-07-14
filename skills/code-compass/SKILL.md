@@ -2,7 +2,7 @@
 name: code-compass
 description: |
   个人 skill 库与 CLI 的总入口，提供一套 spec 驱动、状态机编排的开发方法论（已内化为自包含流程，
-  非强制依赖外部 skill）。当用户希望启用 code-compass、运行其命令（use-code-compass / init /
+   非强制依赖外部 skill）。当用户希望启用 code-compass、运行其命令（using-code-compass / init /
   product-analysis / dev / guard），或在会话中需要按本库方法论（柏拉图式发问、spec 驱动开发、
   状态机编排、**先分析后开发的强制约束**）工作时加载。任何代码改动意图默认先走 product-analysis → dev。
 ---
@@ -21,16 +21,16 @@ description: |
 npx skills add rongmazhong/code-compass
 # 让 code-compass 命令可用（一次性）
 ln -sfn ~/.agents/skills/code-compass/code-compass ~/.local/bin/code-compass
-code-compass use-code-compass      # 链接子 skill 并完成当前项目初始化
+code-compass using-code-compass      # 链接子 skill 并完成当前项目初始化（旧别名 use-code-compass / use 仍可用）
 ```
 
-> 运行 `use-code-compass` 时也会自动补建上面的软链。若 `~/.local/bin` 不在 PATH，请将其加入 shell 配置。
+> 运行 `using-code-compass` 时也会自动补建上面的软链。若 `~/.local/bin` 不在 PATH，请将其加入 shell 配置。
 
-## 四个核心命令
+## 核心命令
 
 | 命令 | skill 指引 | 作用 |
 |------|-----------|------|
-| `use-code-compass` | `skills/use-code-compass/SKILL.md` | 注册并启用库（软链 skills 到 agent 技能目录） |
+| `using-code-compass` | `skills/using-code-compass/SKILL.md` | 注册并启用库（软链 skills 到 agent 技能目录，并确保项目已 init） |
 | `init` | `skills/init/SKILL.md` | 初始化 `.harness/`（含 state/rules/openspec），注入 AGENTS.md |
 | `product-analysis` | `skills/product-analysis/SKILL.md` | 柏拉图式发问 → 需求范围 → spec 文档 |
 | `dev` / `develop` | `skills/dev/SKILL.md` | 基于 spec 的开发实现（自动 git worktree 隔离） |

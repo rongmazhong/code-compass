@@ -11,7 +11,7 @@
 # 读取对应 skills/<cmd>/SKILL.md 中的方法论去执行具体工作。
 #
 # 子命令：
-#   use-code-compass   注册并启用本 skill 库（链接 skills 到 agent 的技能目录）
+#   using-code-compass  注册并启用本 skill 库（链接 skills 到 agent 的技能目录）
 #   init               在当前项目初始化 .harness/、docs/ 与 AGENTS.md
 #   product-analysis  进入柏拉图式发问，确定需求范围并生成 spec
 #   dev|develop        基于 spec 进行开发实现（自动创建 git worktree）
@@ -51,7 +51,7 @@ warn() { printf '\033[33m[code-compass]\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[31m[code-compass]\033[0m %s\n' "$*" >&2; exit 1; }
 
 # ---------------------------------------------------------------------------
-# use-code-compass : 注册并启用 skill 库
+# using-code-compass : 注册并启用 skill 库
 # ---------------------------------------------------------------------------
 cmd_use() {
   log "正在将 skills 链接到 agent 技能目录: $SKILLS_DIR"
@@ -1294,7 +1294,7 @@ cmd_help() {
 code-compass —— 个人 skill 库 CLI
 
 用法:
-  code-compass use-code-compass   注册并启用本 skill 库
+   code-compass using-code-compass   注册并启用本 skill 库
   code-compass init               在当前项目初始化 .harness/ 与 AGENTS.md
   code-compass product-analysis [name]  柏拉图式发问，确定需求范围并生成 spec
   code-compass dev|develop [name] 基于 spec 进行开发实现（自动创建 git worktree）
@@ -1313,7 +1313,7 @@ EOF
 }
 
 case "$cmd" in
-  use|use-code-compass) cmd_use "$@" ;;
+   use|use-code-compass|using-code-compass) cmd_use "$@" ;;
   init)                  cmd_init "$@" ;;
   product-analysis)      cmd_product_analysis "$@" ;;
   dev|develop)           cmd_dev "$@" ;;
