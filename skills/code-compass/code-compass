@@ -76,11 +76,21 @@ cmd_use() {
   fi
   log "可用 skill: $(ls "$CC_ROOT"/skills 2>/dev/null)"
 
-  # 确保当前项目已初始化 harness
+  # 1) 确保当前项目已初始化 harness（需求：未 init 则初始化）
+  local did_init=0
   if [ ! -d "$TARGET_DIR/.harness" ]; then
     log "目标项目尚未初始化，先执行 init ..."
     cmd_init
+    did_init=1
+  else
+    log "目标项目已初始化 (.harness 存在)"
   fi
+
+  # 2) 校验并补全 AGENTS.md 路由段（幂等）
+  _ensure_agents_md
+
+  # 3) 内联打印项目状态卡（需求：判定项目状态并给出下一步）
+  _print_state_card
 
   cat <<EOF
 
@@ -137,17 +147,7 @@ cmd_init() {
   fi
 
   # 注入 AGENTS.md 指引
-  local agent_md="$TARGET_DIR/AGENTS.md"
-  local block; block="$(cat "$CC_ROOT/harness/AGENTS.md.harness")"
-  if [ ! -f "$agent_md" ]; then
-    printf '%s\n%s\n%s\n' "$MARKER_BEGIN" "$block" "$MARKER_END" > "$agent_md"
-    log "已创建 $agent_md"
-  elif grep -q "$MARKER_BEGIN" "$agent_md"; then
-    warn "$agent_md 已包含 code-compass 段，跳过注入"
-  else
-    printf '\n%s\n%s\n%s\n' "$MARKER_BEGIN" "$block" "$MARKER_END" >> "$agent_md"
-    log "已向 $agent_md 追加 code-compass 段"
-  fi
+  _ensure_agents_md
 
   log "初始化完成："
   log "  .harness/config.json"
@@ -352,6 +352,61 @@ except Exception:
     pass
 PY
   fi
+}
+
+# 依据当前阶段推导 agent 下一步应执行的动作
+_next_step() {
+  local stage="$1"
+  case "$stage" in
+    idea)             echo "运行 code-compass product-analysis <name> 收敛需求并生成 spec" ;;
+    product-analysis) echo "确认 spec 内容，进入 planned 后运行 code-compass dev <name>" ;;
+    planned)          echo "已就绪，运行 code-compass dev <name> 开始开发（guard 通过）" ;;
+    dev)              echo "开发中：完成后将 stage 推进到 implemented" ;;
+    implemented)      echo "运行 qa 验证后进入 verified" ;;
+    qa)               echo "QA 进行中，完成后进入 verified" ;;
+    verified)         echo "运行 review 后进入 reviewed" ;;
+    reviewed)         echo "运行 summary 生成总结文档" ;;
+    summary)          echo "流程已收尾，可运行 code-compass wiki 更新文档" ;;
+    *)                echo "未知阶段 '$stage'，可手动编辑 workflow-state.json 的 stage 字段" ;;
+  esac
+}
+
+# 校验并补全 AGENTS.md 的 code-compass 路由段（幂等）
+_ensure_agents_md() {
+  local agent_md="$TARGET_DIR/AGENTS.md"
+  local block; block="$(cat "$CC_ROOT/harness/AGENTS.md.harness")"
+  if [ ! -f "$agent_md" ]; then
+    printf '%s\n%s\n%s\n' "$MARKER_BEGIN" "$block" "$MARKER_END" > "$agent_md"
+    log "已创建 $agent_md 并注入 code-compass 路由段"
+  elif grep -q "$MARKER_BEGIN" "$agent_md"; then
+    log "$agent_md 已包含 code-compass 路由段"
+  else
+    printf '\n%s\n%s\n%s\n' "$MARKER_BEGIN" "$block" "$MARKER_END" >> "$agent_md"
+    log "已向 $agent_md 追加 code-compass 路由段"
+  fi
+}
+
+# 内联打印项目状态卡（供 using-code-compass / status 复用）
+_print_state_card() {
+  local state="$TARGET_DIR/.harness/state/workflow-state.json"
+  [ -f "$state" ] || { warn "未检测到 $state，无法输出状态卡"; return 1; }
+  local stage spec branch vapd updated
+  stage="$(_state_get stage | tr -d '\n')"
+  spec="$(_state_get spec | tr -d '\n')"
+  branch="$(_state_get branch | tr -d '\n')"
+  vapd="$(_state_get vapd_id | tr -d '\n')"
+  updated="$(_state_get updated_at | tr -d '\n')"
+  local next; next="$(_next_step "$stage")"
+  cat <<EOF
+
+📊 项目状态卡
+  阶段 stage : $stage
+  关联 spec  : ${spec:-（无）}
+  开发分支   : ${branch:-（无）}
+  VAPD 标识  : ${vapd:-（未设置）}
+  最近更新   : $updated
+  ➡️  下一步  : $next
+EOF
 }
 
 cmd_vapd() {
