@@ -19,18 +19,17 @@ description: |
 
 ```bash
 npx skills add rongmazhong/code-compass
-# 让 code-compass 命令可用（一次性）
-ln -sfn ~/.agents/skills/code-compass/code-compass ~/.local/bin/code-compass
-code-compass using-code-compass      # 链接子 skill 并完成当前项目初始化
+# 让 code-compass 命令可用（二选一，本工具不创建任何软链）：
+#   a) alias 到 shell 配置：  alias code-compass="$HOME/.agents/skills/code-compass/code-compass"
+#   b) 或加入 PATH：          export PATH="$HOME/.agents/skills/code-compass:$PATH"
+code-compass using-code-compass      # 校验安装并完成当前项目初始化
 ```
-
-> 运行 `using-code-compass` 时也会自动补建上面的软链。若 `~/.local/bin` 不在 PATH，请将其加入 shell 配置。
 
 ## 核心命令
 
 | 命令 | skill 指引 | 作用 |
 |------|-----------|------|
-| `using-code-compass` | `skills/using-code-compass/SKILL.md` | 注册并启用库（软链 skills 到 agent 技能目录，并确保项目已 init） |
+| `using-code-compass` | `skills/using-code-compass/SKILL.md` | 注册并启用库（校验已全局安装，并确保项目已 init） |
 | `init` | `skills/init/SKILL.md` | 初始化 `.harness/`（含 state/rules/openspec），注入 AGENTS.md |
 | `product-analysis` | `skills/product-analysis/SKILL.md` | 柏拉图式发问 → 需求范围 → spec 文档 |
 | `dev` / `develop` | `skills/dev/SKILL.md` | 基于 spec 的开发实现（自动 git worktree 隔离） |

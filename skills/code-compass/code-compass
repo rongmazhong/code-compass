@@ -24,7 +24,23 @@
 
 set -euo pipefail
 
-CC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 解析脚本真实目录：若通过软链（如 alias/PATH 指向的副本）调用，BASH_SOURCE[0] 会指向软链，
+# 直接取目录会得到软链所在目录，导致 CC_ROOT/skills 不存在、glob 退化成字面量 "*"。
+# 这里逐层解析软链，兼容 Linux/macOS（readlink 无 -f 也可用）。
+_resolve_dir() {
+  local src="$1" dir link
+  while [ -L "$src" ]; do
+    dir="$(cd "$(dirname "$src")" && pwd)"
+    link="$(readlink "$src")"
+    case "$link" in
+      /*) src="$link" ;;
+      *)  src="$dir/$link" ;;
+    esac
+  done
+  dir="$(cd "$(dirname "$src")" && pwd)"
+  printf '%s\n' "$dir"
+}
+CC_ROOT="$(_resolve_dir "${BASH_SOURCE[0]}")"
 
 # 解析 HOME（环境可能未设置，避免 set -u 下报 unbound variable）
 if [ -z "${HOME:-}" ]; then
@@ -54,23 +70,11 @@ die()  { printf '\033[31m[code-compass]\033[0m %s\n' "$*" >&2; exit 1; }
 # using-code-compass : 注册并启用 skill 库
 # ---------------------------------------------------------------------------
 cmd_use() {
-  log "正在将 skills 链接到 agent 技能目录: $SKILLS_DIR"
-  mkdir -p "$SKILLS_DIR"
-  local count=0
-  for d in "$CC_ROOT"/skills/*/; do
-    name="$(basename "$d")"
-    ln -sfn "$d" "$SKILLS_DIR/$name"
-    count=$((count + 1))
-  done
-  log "已链接 $count 个 skill 到 $SKILLS_DIR"
-  log "可用 skill: $(ls "$CC_ROOT"/skills)"
-
-  # 将本 CLI 软链到 ~/.local/bin，使 `code-compass` 命令在 PATH 上可用
-  if [ -d "$HOME/.local/bin" ] || mkdir -p "$HOME/.local/bin" 2>/dev/null; then
-    ln -sfn "$CC_ROOT/code-compass" "$HOME/.local/bin/code-compass" 2>/dev/null \
-      && log "已将 code-compass 软链到 ~/.local/bin/code-compass" \
-      || warn "无法写入 ~/.local/bin，请手动将 $CC_ROOT/code-compass 加入 PATH"
+  log "code-compass 已全局安装: $SKILLS_DIR/code-compass"
+  if [ ! -d "$SKILLS_DIR/code-compass" ]; then
+    warn "未检测到 $SKILLS_DIR/code-compass，请先运行: npx skills add rongmazhong/code-compass"
   fi
+  log "可用 skill: $(ls "$CC_ROOT"/skills 2>/dev/null)"
 
   # 确保当前项目已初始化 harness
   if [ ! -d "$TARGET_DIR/.harness" ]; then
@@ -82,10 +86,11 @@ cmd_use() {
 
 ✅ code-compass 已启用。
 
-agent 现在可以通过以下方式触发 skill：
-  - 直接运行:  code-compass init | product-analysis | dev
-  - agent skill 工具: 加载 skills/<name>/SKILL.md（已软链到 $SKILLS_DIR）
+本工具不创建任何软链；全局安装位于 $SKILLS_DIR/code-compass。
+运行命令请使用完整路径（建议为其配置 alias 或加入 PATH）：
+  $CC_ROOT/code-compass init | product-analysis | dev
 
+agent 触发各子 skill：读取 $CC_ROOT/skills/<name>/SKILL.md
 各 skill 触发条件见对应 SKILL.md 的 frontmatter description。
 EOF
 }

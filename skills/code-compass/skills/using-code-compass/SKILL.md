@@ -3,7 +3,7 @@ name: using-code-compass
 description: |
    注册并启用 code-compass 个人 skill 库（一键接入方法论编排）。当用户运行
    `code-compass using-code-compass`、或说"启用 code-compass / 加载我的 skill 库 / 接入指南针"时触发。
-   该命令把库内 skills/ 全部软链到 agent 技能目录，确保目标项目已 `init`（注入强制约束），
+    该命令确保 code-compass 已全局安装到 agent 技能目录，并确保目标项目已 `init`（注入强制约束），
    并打印各 skill 的触发方式，使后续"新功能 / 实现 X / 继续"等意图能按触发词映射自动调用对应 skill。
 ---
 
@@ -22,10 +22,9 @@ description: |
 ## 执行流程
 
 1. 运行 `code-compass using-code-compass`（CLI 会：）
-   - 将 `skills/*` 软链到 `$CODE_COMPASS_SKILLS_DIR`（默认 `~/.agents/skills`）
-   - 若目标项目没有 `.harness/`，自动执行 `init`（注入强制约束段与 `rules/guard.md`）
-   - 将 CLI 软链到 `~/.local/bin/code-compass`，使命令进入 PATH
-   - 打印已注册 skill 列表与触发方式
+    - 校验 code-compass 已全局安装到 `$CODE_COMPASS_SKILLS_DIR/code-compass`（默认 `~/.agents/skills/code-compass`）；本工具不创建任何软链
+    - 若目标项目没有 `.harness/`，自动执行 `init`（注入强制约束段与 `rules/guard.md`）
+    - 打印已注册 skill 列表与触发方式（各子 skill 直接读取 `skills/<name>/SKILL.md`）
 2. 确认 AGENTS.md 中已注入 code-compass 强制约束段（init 负责）
 3. 此后 agent 遇到匹配场景时，直接 `skill` 工具加载对应 `SKILL.md`
 
