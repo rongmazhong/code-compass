@@ -78,4 +78,3 @@ docs/                        # 项目 wiki（AI agent 入口）
 ├── modules.md               # 核心模块
 └── api.md                   # 功能清单及 API 接口
 ```
-```

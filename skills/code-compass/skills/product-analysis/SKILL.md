@@ -60,8 +60,7 @@ CLI 已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.m
 
 ## 步骤 4 · 对抗验证 + 提出 2~3 方案
 
-- **对抗验证信息**：用 sequential-thinking（若环境提供 `sequential-thinking` skill 则 invoke；
-  否则采用"结构化逐步推理"自行校验）复核步骤 2~3 的事实是否自洽、有无遗漏前提或矛盾假设。
+- **对抗验证**：用结构化逐步推理复核步骤 2~3 的事实是否自洽、有无遗漏前提或矛盾假设。
 - **给出 2~3 个候选方案**，每个含：思路、关键取舍、相对工作量、主要风险。
 - **明确推荐**：给出推荐方案与理由（为什么它最好 / 最窄切口 / 风险最低）。
 - **用户选定其一**；若都不满意，回到步骤 3 补充澄清后重提。
@@ -98,8 +97,8 @@ CLI 已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.m
   - Scenario 是否覆盖正常路径 + 异常/边界路径？
   - 是否与 `.harness/openspec/specs/` 中既有 spec 冲突？
   - 是否夹带了"非目标"内容？
-- **对抗验证（审查子代理）**：启动 `requesting-code-review` 或 gstack 的 `review` + `codex`
-  对 spec 做对抗式审查，输出问题清单。
+- **对抗验证**：逐条对 spec 做对抗式审查——是否可验证、Scenario 是否覆盖正常+异常路径、
+  是否与既有 spec 冲突、是否夹带非目标——输出问题清单。
 - **闭环**：若存在需修改项，修订 spec 后**请用户再 review 一次**，直到用户认可。
 
 ## 步骤 8 · 交接 plans（唯一终态）

@@ -10,9 +10,7 @@ description: >
 `.harness/state/workflow-state.json`，显示当前阶段与进度，并可激活
 下一步自动化动作（状态机思路参考 develop-workflow-rong，已内置，非依赖该 skill）。
 
-`code-compass guard`（或 `code-compass status --guard`）是**阶段闸门**：在 agent 动手写代码前
-校验当前阶段是否允许进入开发。仍处 `idea` / `product-analysis` 时输出黄色提醒并以**非 0 退出**
-（视为偏离方法论），强制先走 `product-analysis`。
+`code-compass guard`（或 `code-compass status --guard`）的阶段闸门逻辑见 `skills/guard/SKILL.md`。
 
 ## 触发条件
 
