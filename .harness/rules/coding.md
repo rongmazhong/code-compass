@@ -1,6 +1,6 @@
 # 编码约束
 
-> 由 `code-compass init` 探测生成，按技术栈裁剪。
+> 由 `bash scripts/init-harness.sh` 探测生成，按技术栈裁剪。
 
 ## 通用原则
 

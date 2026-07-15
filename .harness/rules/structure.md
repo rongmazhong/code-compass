@@ -1,6 +1,6 @@
 # 项目工程结构定义
 
-> 由 `code-compass init` 探测生成，请按需补充与修正。
+> 由 `bash scripts/init-harness.sh` 探测生成，请按需补充与修正。
 
 ## 识别到的技术栈
 
