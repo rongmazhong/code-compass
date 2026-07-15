@@ -37,12 +37,21 @@
       ]
     },
     "skill-layout-cleanup": {
-      "stage": "dev",
+      "stage": "summary",
       "branch": "feat/skill-layout-cleanup",
       "track": "refactor",
       "vapd_id": "",
-      "updated_at": "2026-07-15T11:24:00Z",
-      "completed": []
+      "updated_at": "2026-07-15T11:33:59Z",
+      "completed": [
+        "dev",
+        "implemented",
+        "planned",
+        "product-analysis",
+        "qa",
+        "reviewed",
+        "summary",
+        "verified"
+      ]
     }
   }
 }

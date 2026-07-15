@@ -383,7 +383,7 @@ _set_stage() {
   local f; f="$(_state_file)"
   if command -v jq >/dev/null 2>&1; then
     jq --arg s "$slug" --arg v "$stage" \
-      '.changes[$s].completed |= (if (.changes[$s].completed|type)=="array" then (. + [$v] | unique) else [$v] end)' \
+      '.changes[$s].completed |= (if (type=="array") then (. + [$v] | unique) else [$v] end)' \
       "$f" > "$f.tmp" 2>/dev/null && mv "$f.tmp" "$f"
   elif command -v python3 >/dev/null 2>&1; then
     python3 - "$f" "$slug" "$stage" <<'PY'
