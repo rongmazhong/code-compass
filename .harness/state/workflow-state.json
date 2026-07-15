@@ -1,18 +1,58 @@
 {
   "tool": "code-compass",
-  "stage": "summary",
-  "completed": [
-    "dev",
-    "implemented",
-    "planned",
-    "product-analysis",
-    "qa",
-    "reviewed",
-    "summary",
-    "verified"
-  ],
-  "spec": "cli-robustness-hardening",
-  "branch": "feat/cli-robustness-hardening",
-  "vapd_id": "",
-  "updated_at": "2026-07-14T11:05:04Z"
+  "active": "parallel-state",
+  "changes": {
+    "parallel-state": {
+      "stage": "verified",
+      "branch": "feat/parallel-state",
+      "track": "",
+      "vapd_id": "",
+      "updated_at": "2026-07-15T01:18:49Z",
+      "completed": [
+        "dev",
+        "implemented",
+        "planned",
+        "product-analysis",
+        "qa",
+        "reviewed",
+        "summary",
+        "verified"
+      ]
+    },
+    "sop-tiers": {
+      "stage": "planned",
+      "branch": "",
+      "track": "",
+      "vapd_id": "",
+      "updated_at": ""
+    },
+    "qa-automation": {
+      "stage": "planned",
+      "branch": "",
+      "track": "",
+      "vapd_id": "",
+      "updated_at": ""
+    },
+    "status-activate-cmd": {
+      "stage": "planned",
+      "branch": "",
+      "track": "",
+      "vapd_id": "",
+      "updated_at": ""
+    },
+    "init-detect": {
+      "stage": "planned",
+      "branch": "",
+      "track": "",
+      "vapd_id": "",
+      "updated_at": ""
+    },
+    "pa-efficiency": {
+      "stage": "planned",
+      "branch": "",
+      "track": "",
+      "vapd_id": "",
+      "updated_at": ""
+    }
+  }
 }
