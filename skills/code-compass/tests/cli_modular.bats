@@ -111,6 +111,59 @@ teardown() {
   root="$(cd "$(dirname "$CC")" && pwd)"
   run bash -c "for f in \"$root\"/lib/*.sh \"$root\"/lib/cmds/*.sh; do bash -n \"\$f\" || exit 1; done"
   [ "$status" -eq 0 ]
-  run bash -c "source \"$root\"/code-compass; type cmd_init cmd_guard cmd_commit cmd_qa >/dev/null 2>&1"
+  run bash -c "source \"$root\"/code-compass; type cmd_init cmd_guard cmd_commit cmd_qa cmd_upgrade >/dev/null 2>&1"
   [ "$status" -eq 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# R8: upgrade 刷新老项目 harness 配置（cc-upgrade）
+# ---------------------------------------------------------------------------
+_make_old_project() {
+  bash "$CC" init >/dev/null 2>&1
+  # 模拟 sop-tiers 之前的老项目：config.json 无 tracks，state 无 updated_at
+  jq 'del(.tracks)' .harness/config.json > .harness/config.json.tmp && mv .harness/config.json.tmp .harness/config.json
+  # 用户自定义键，upgrade 不应删除/覆盖
+  jq '. + {mykey:"keep-me"}' .harness/config.json > .harness/config.json.tmp && mv .harness/config.json.tmp .harness/config.json
+  # init 的 changes 为空 {}；注入一个真实老 change（缺 updated_at）
+  jq '.changes.a = {stage:"dev",branch:"feat/a",track:"standard",vapd_id:"",completed:[]}' .harness/state/workflow-state.json > .harness/state/workflow-state.json.tmp && mv .harness/state/workflow-state.json.tmp .harness/state/workflow-state.json
+  jq '(.changes[]?) |= del(.updated_at)' .harness/state/workflow-state.json > .harness/state/workflow-state.json.tmp && mv .harness/state/workflow-state.json.tmp .harness/state/workflow-state.json
+  # 放一个 sentinel 验证 scope-locked 不碰 rules/
+  echo "# sentinel" > .harness/rules/SENTINEL.md
+}
+
+@test "upgrade adds missing tracks and updated_at, preserves user keys" {
+  _make_old_project
+  run bash "$CC" upgrade
+  [ "$status" -eq 0 ]
+  # config.json 被补回 tracks
+  run jq -r '.tracks | keys | length' .harness/config.json
+  [ "$output" -ge 4 ]
+  # 用户键保留
+  run jq -r '.mykey' .harness/config.json
+  [ "$output" = "keep-me" ]
+  # state 每个 change 都有 updated_at 字段
+  run jq -r '.changes.a.updated_at' .harness/state/workflow-state.json
+  [ "$output" != "null" ]
+}
+
+@test "upgrade is scope-locked: rules/ and AGENTS.md untouched" {
+  _make_old_project
+  run bash "$CC" upgrade
+  [ "$status" -eq 0 ]
+  [ -f .harness/rules/SENTINEL.md ]
+  [ -f AGENTS.md ]
+}
+
+@test "upgrade is idempotent on a fresh new project" {
+  bash "$CC" init >/dev/null 2>&1
+  run bash "$CC" upgrade
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"已是最新"* ]]
+}
+
+@test "upgrade --self skips when upgrade_source unset" {
+  bash "$CC" init >/dev/null 2>&1
+  run bash "$CC" upgrade --self
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"未配置 upgrade_source"* ]] || [[ "$output" == *"跳过"* ]]
 }
