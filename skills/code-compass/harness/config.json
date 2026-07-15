@@ -17,5 +17,12 @@
     "verified",
     "reviewed",
     "summary"
-  ]
+  ],
+  "tracks": {
+    "research":  ["idea", "product-analysis", "planned", "dev", "summary"],
+    "small":     ["idea", "product-analysis", "planned", "dev", "implemented", "qa", "verified", "summary"],
+    "standard":  ["idea", "product-analysis", "planned", "dev", "implemented", "qa", "verified", "reviewed", "summary"],
+    "standard+": ["idea", "product-analysis", "planned", "dev", "implemented", "qa", "verified", "reviewed", "summary"],
+    "refactor":  ["idea", "product-analysis", "planned", "dev", "implemented", "qa", "verified", "reviewed", "summary"]
+  }
 }

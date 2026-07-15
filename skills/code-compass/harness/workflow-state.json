@@ -1,9 +1,5 @@
 {
   "tool": "code-compass",
-  "stage": "idea",
-  "completed": [],
-  "spec": "",
-  "branch": "",
-  "vapd_id": "",
-  "updated_at": "__UPDATED_AT__"
+  "active": "",
+  "changes": {}
 }
