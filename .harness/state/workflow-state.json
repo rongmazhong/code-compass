@@ -1,10 +1,10 @@
 {
   "tool": "code-compass",
-  "active": "sop-tiers",
+  "active": "init-detect",
   "changes": {
-    "sop-tiers": {
+    "init-detect": {
       "stage": "verified",
-      "branch": "feat/sop-tiers",
+      "branch": "feat/init-detect",
       "track": "standard",
       "vapd_id": "",
       "updated_at": "",

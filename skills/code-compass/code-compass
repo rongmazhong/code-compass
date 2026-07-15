@@ -1192,9 +1192,42 @@ _detect_project() {
     PROJ_LANG="Ruby"; PROJ_TECH="Ruby 项目"
     PROJ_BUILD="bundle exec rake"
     PROJ_TEST="bundle exec rspec"
+  elif [ -f "$TARGET_DIR/Makefile" ] || [ -f "$TARGET_DIR/justfile" ] || [ -f "$TARGET_DIR/JUSTFILE" ]; then
+    PROJ_LANG="Make"; PROJ_TECH="Make/Just 项目"
+    PROJ_BUILD="make"
+    PROJ_TEST="make test"
+    PROJ_LINT="make lint"
+    PROJ_FMT="make fmt"
+  elif [ -f "$TARGET_DIR/CMakeLists.txt" ]; then
+    PROJ_LANG="C/C++"; PROJ_TECH="CMake 项目"
+    PROJ_BUILD="cmake --build build"
+    PROJ_TEST="ctest --test-dir build"
+  elif ls "$TARGET_DIR"/*.csproj >/dev/null 2>&1 || ls "$TARGET_DIR"/*.sln >/dev/null 2>&1; then
+    PROJ_LANG="C#/.NET"; PROJ_TECH="DotNet 项目"
+    PROJ_BUILD="dotnet build"
+    PROJ_TEST="dotnet test"
+    PROJ_FMT="dotnet format"
+  elif [ -f "$TARGET_DIR/mix.exs" ]; then
+    PROJ_LANG="Elixir"; PROJ_TECH="Elixir 项目"
+    PROJ_BUILD="mix compile"
+    PROJ_TEST="mix test"
+    PROJ_FMT="mix format"
+  elif [ -f "$TARGET_DIR/Dockerfile" ]; then
+    PROJ_LANG="Docker/容器"; PROJ_TECH="容器化项目"
+    PROJ_BUILD="docker build ."
+  elif ls "$TARGET_DIR"/*.sh >/dev/null 2>&1 || grep -rlq '^#!.*sh$' "$TARGET_DIR"/* >/dev/null 2>&1; then
+    PROJ_LANG="Shell"; PROJ_TECH="Shell 脚本"
+    PROJ_LINT="shellcheck（可选）"
   fi
 
-  [ -z "$PROJ_TECH" ] && PROJ_TECH="（未在根目录识别到已知构建系统）"
+  if [ -z "$PROJ_TECH" ]; then
+    PROJ_TECH="（未在根目录识别到已知构建系统）"
+  elif [ "$PROJ_LANG" = "未知" ]; then
+    # 技术栈信号命中但语言未归类时，仍给出可读标签
+    PROJ_LANG="$PROJ_TECH"
+  fi
+  # 完全未识别：语言字段显式标注，避免静默“未知”
+  [ "$PROJ_LANG" = "未知" ] && PROJ_LANG="未识别（请手动填写）"
   return 0
 }
 
