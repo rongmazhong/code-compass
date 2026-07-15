@@ -94,8 +94,9 @@ if [ "${BASH_SOURCE[0]}" = "$0" ]; then
    qa)                    cmd_qa "$@" ;;
    verify)                cmd_verify "$@" ;;
    review)                cmd_review "$@" ;;
-   wiki)                  cmd_wiki "$@" ;;
-   help|--help|-h)        cmd_help ;;
+    wiki)                  cmd_wiki "$@" ;;
+    upgrade)               cmd_upgrade "$@" ;;
+    help|--help|-h)        cmd_help ;;
   *)                     warn "未知命令: $cmd"; cmd_help; exit 1 ;;
 esac
 fi
