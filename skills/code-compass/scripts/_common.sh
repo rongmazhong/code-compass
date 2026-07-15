@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-# scripts/_common.sh —— code-compass skill 库共享引导层
+# scripts/_common.sh —— code-compass 共享实现层
 #
-# 历史：原 `code-compass` 单文件 CLI 既是调度器又是脚手架。redesign 后 CLI 已移除，
-# 能力改为「子 skill（读 SKILL.md 跟方法论）+ scripts/（机械工具层）」。
-# 本文件被每个 scripts/*.sh 在开头 source，负责解析 skill 根目录、准备全局变量、
-# 载入共享实现（原 lib/ 已并入此处），使每个脚本都能独立 `bash scripts/x.sh` 运行。
-#
-# 被 source 时不分发命令——仅准备环境。具体命令逻辑在各 cmd_* 函数里。
+# 被每个 scripts/*.sh 在开头 source，解析 skill 根目录、准备全局变量与共享函数。
+# 被 source 时不分发命令——仅准备环境；命令逻辑在各 cmd_* 函数里。
 
 set -euo pipefail
 
