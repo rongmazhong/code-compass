@@ -16,24 +16,28 @@
 - [x] **qa / verify / review**：QA 自动化三连，按阶段推进状态机
 - [x] **wiki**：重建 `docs/INDEX.md`；`wiki <overview|architecture|modules|api>` 重建指定文档脚手架
 
-## CLI 接口（子命令 → 函数）
+## 能力 → 子 skill → 脚本 映射
 
-| 命令 | 参数 | 说明 | 落点 |
-|------|------|------|------|
-| `using-code-compass` | — | 接入校验 + 状态卡 | `lib/cmds/use.sh: cmd_use` |
-| `init` | — | 初始化当前项目 | `lib/cmds/init.sh: cmd_init` |
-| `product-analysis` | `[name]` / `--append "文本"` / `--force <name>` | 需求分析；追加澄清 / 强制建工作区 | `lib/cmds/product-analysis.sh` |
-| `dev` / `develop` | `[name]` / `--force <name>` | 基于 spec 开发（worktree 隔离） | `lib/cmds/dev.sh: cmd_dev` |
-| `worktree` | `list` / `prune` | 管理 worktree | `lib/cmds/worktree.sh: cmd_worktree` |
-| `vapd` | `[ID]` | 记录/查看 VAPD 标识 | `lib/cmds/vapd.sh: cmd_vapd` |
-| `commit` | `[--exempt] <type> <描述...>` | 规范提交（阶段校验） | `lib/cmds/commit.sh: cmd_commit` |
-| `guard` | — | 闸门校验（非 0=拦截） | `lib/cmds/guard.sh: cmd_guard` |
-| `status` | `[--all]` / `[activate]` / `[--guard]` | 状态卡 / 一览 / 下一步 | `lib/cmds/status.sh: cmd_status` |
-| `qa` | — | 自动化 QA（端到端 + 检查），推进至 `verified` | `lib/cmds/qa.sh: cmd_qa` |
-| `verify` | — | 验证 spec 覆盖（tasks 勾选），推进至 `reviewed` | `lib/cmds/qa.sh: cmd_verify` |
-| `review` | — | 代码评审，推进至 `summary` | `lib/cmds/qa.sh: cmd_review` |
-| `wiki` | `[overview\|architecture\|modules\|api\|index]` | 重建 wiki | `lib/cmds/wiki.sh: cmd_wiki` |
-| `help` / `--help` / `-h` | — | 帮助 | `lib/cmds/help.sh: cmd_help` |
+本库没有 CLI 子命令。每个能力对应一个「**子 skill（意图触发）**」与一个「**scripts/ 脚本（机械执行）**」。
+agent 在会话中按用户自然语言意图加载子 skill，子 skill 内部调对应 `bash scripts/x.sh`。
+
+| 能力 | 触发意图（用户说法） | 子 skill | 对应脚本 | 调用方式 |
+|------|----------------------|----------|----------|----------|
+| 接入启用 | 「启用指南针 / 加载我的 skill 库 / using-code-compass」 | `skills/using-code-compass` | `scripts/use.sh` | `bash scripts/use.sh` |
+| 初始化 | 「初始化 / init / 接入项目 / 首次使用」 | `skills/init` | `scripts/init-harness.sh` | `bash scripts/init-harness.sh` |
+| 需求分析 | 「新功能 / 做客户端 / 实现 X / 需求分析 / 设计一下 / 出方案」 | `skills/product-analysis` | `scripts/product-analysis.sh` | `bash scripts/product-analysis.sh [name]` |
+| 按 spec 开发 | 「开始实现 / 按 spec 开发 / 进入开发」 | `skills/dev` | `scripts/dev.sh`（内调 `guard.sh`+`worktree.sh`） | `bash scripts/dev.sh [name]` |
+| worktree 管理 | 「查看 worktree / 清理 worktree」 | `skills/worktree` | `scripts/worktree.sh` | `bash scripts/worktree.sh list\|prune` |
+| VAPD 标识 | 「记录 VAPD / 设置需求 ID / 缺陷编号 VB…」 | `skills/vapd` | `scripts/vapd.sh` | `bash scripts/vapd.sh [ID]` |
+| 规范提交 | 「提交 / commit / 按规范提交」 | `skills/commit` | `scripts/commit.sh`（开头调 `guard.sh`） | `bash scripts/commit.sh [--exempt] <type> <描述...>` |
+| 阶段闸门 | 「能否动手 / 校验阶段 / 现在能编码吗」 | `skills/guard` | `scripts/guard.sh` | `bash scripts/guard.sh` |
+| 状态查看 | 「现在到哪 / 能否动手 / 继续流程 / 查看进度」 | `skills/status` | `scripts/status.sh` | `bash scripts/status.sh [--all\|activate\|--guard]` |
+| QA 三连 | 「跑 QA / 验证覆盖 / 代码评审 / 做代码审查」 | `skills/qa` | `scripts/qa.sh` `scripts/verify.sh` `scripts/review.sh` | `bash scripts/qa.sh` 等 |
+| 重建 wiki | 「更新文档 / 写 API 文档 / 同步 wiki」 | `skills/wiki` | `scripts/wiki.sh` | `bash scripts/wiki.sh [overview\|architecture\|modules\|api\|index]` |
+| 刷新 harness | 「升级 / refresh harness / 配置漂移了」 | `skills/upgrade` | `scripts/upgrade.sh` | `bash scripts/upgrade.sh [--self]` |
+
+> 说明：`scripts/state.sh` 是读写 `workflow-state.json` 的底层工具（`get`/`set`/`set-stage`/`set-vapd`），
+> 主要供其他脚本与子 skill 复用，终端一般不直接调用。
 
 ## 对外契约
 

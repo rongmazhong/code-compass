@@ -37,7 +37,7 @@
 
 ## 5. 触发率评测与收尾（依赖：T14）
 
-- [ ] T21 用 skill-creator `run_loop` 对 12 个子 skill description 跑触发率评测，达阈值（R9）
+- [x] T21 用 skill-creator `run_loop` 对 12 个子 skill description 跑触发率评测，达阈值（R9）
 - [x] T22 `bash -n` 对全部 `scripts/*.sh` 通过；`shellcheck`（可选）无致命告警
 - [x] T23 全量 bats 通过 + 手动 smoke：子 skill 加载后 `product-analysis`→生成 spec、`dev` 经 `guard.sh`、`commit` 格式正确、存量项目续跑
 - [x] T24 验证存量已 init 项目：移除 CLI 后 state/openspec 仍可读取续跑（R1/R7）
