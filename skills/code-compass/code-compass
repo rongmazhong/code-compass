@@ -283,11 +283,13 @@ cmd_init() {
 # product-analysis : 柏拉图式发问 -> 需求范围 -> spec 文档
 # ---------------------------------------------------------------------------
 cmd_product_analysis() {
-  local name="" vapd=""
+  local name="" vapd="" track=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --vapd) vapd="${2:-}"; shift 2 ;;
       --vapd=*) vapd="${1#--vapd=}"; shift ;;
+      --track) track="${2:-}"; shift 2 ;;
+      --track=*) track="${1#--track=}"; shift ;;
       -*) warn "未知选项: $1"; shift ;;
       *) [ -z "$name" ] && name="$1"; shift ;;
     esac
@@ -296,6 +298,17 @@ cmd_product_analysis() {
   [ -z "$name" ] && die "变更名称不能为空"
   local slug; slug="$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')"
   [ -z "$slug" ] && die "无法从 '$name' 生成合法 slug"
+
+  # 校验 track（档位）
+  local valid_tracks="research small standard standard+ refactor"
+  if [ -n "$track" ]; then
+    case " $valid_tracks " in
+      *" $track "*) ;;
+      *) die "未知 track（档位）: '$track'，可选: $valid_tracks" ;;
+    esac
+  else
+    track="standard"
+  fi
 
   local change_dir="$TARGET_DIR/.harness/openspec/changes/$slug"
   mkdir -p "$change_dir/specs/core"
@@ -306,6 +319,7 @@ cmd_product_analysis() {
 
   # 更新工作流状态
   _set_stage "$slug" "product-analysis"
+  _set_track "$track" "$slug"
 
   # 记录 VAPD 标识（若显式给定）
   if [ -n "$vapd" ]; then
@@ -826,15 +840,34 @@ EOF
 # ---------------------------------------------------------------------------
 
 # 读取目标项目的阶段链（优先用 .harness/config.json，回退到内置默认）
-_stage_chain() {
-  local cfg="$TARGET_DIR/.harness/config.json"
+# 读取某 track 对应的阶段数组；track 未定义或缺失时回退完整 stages
+_track_stages() {
+  local track="${1:-standard}" cfg="$TARGET_DIR/.harness/config.json"
   [ -f "$cfg" ] || cfg="$CC_ROOT/harness/config.json"
   local stages=""
   if command -v jq >/dev/null 2>&1; then
-    stages="$(jq -r '.stages[]? // empty' "$cfg" 2>/dev/null)"
+    stages="$(jq -r --arg t "$track" 'if (.tracks // {})[$t] then (.tracks[$t][]? // empty) else empty end' "$cfg" 2>/dev/null)"
   fi
   if [ -z "$stages" ] && command -v python3 >/dev/null 2>&1; then
-    stages="$(python3 - "$cfg" <<'PY'
+    stages="$(python3 - "$cfg" "$track" <<'PY'
+import json, sys
+cfg, t = sys.argv[1], sys.argv[2]
+try:
+    d = json.load(open(cfg))
+    arr = d.get("tracks", {}).get(t)
+    if arr:
+        print("\n".join(arr))
+except Exception:
+    pass
+PY
+)"
+  fi
+  # track 无定义或为空 -> 回退完整 stages
+  if [ -z "$stages" ]; then
+    if command -v jq >/dev/null 2>&1; then
+      stages="$(jq -r '.stages[]? // empty' "$cfg" 2>/dev/null)"
+    elif command -v python3 >/dev/null 2>&1; then
+      stages="$(python3 - "$cfg" <<'PY'
 import json, sys
 try:
     print("\n".join(json.load(open(sys.argv[1])).get("stages", [])))
@@ -842,8 +875,35 @@ except Exception:
     pass
 PY
 )"
+    fi
+    [ -z "$stages" ] && stages=$'idea\nproduct-analysis\nplanned\ndev\nimplemented\nqa\nverified\nreviewed\summary'
   fi
-  [ -z "$stages" ] && stages=$'idea\nproduct-analysis\nplanned\ndev\nimplemented\nqa\nverified\nreviewed\nsummary'
+  printf '%s\n' "$stages"
+}
+
+_stage_chain() {
+  local track="${1:-}" cfg="$TARGET_DIR/.harness/config.json"
+  [ -f "$cfg" ] || cfg="$CC_ROOT/harness/config.json"
+  local stages=""
+  if [ -n "$track" ]; then
+    stages="$(_track_stages "$track")"
+  fi
+  if [ -z "$stages" ]; then
+    if command -v jq >/dev/null 2>&1; then
+      stages="$(jq -r '.stages[]? // empty' "$cfg" 2>/dev/null)"
+    fi
+    if [ -z "$stages" ] && command -v python3 >/dev/null 2>&1; then
+      stages="$(python3 - "$cfg" <<'PY'
+import json, sys
+try:
+    print("\n".join(json.load(open(sys.argv[1])).get("stages", [])))
+except Exception:
+    pass
+PY
+)"
+    fi
+    [ -z "$stages" ] && stages=$'idea\nproduct-analysis\nplanned\ndev\nimplemented\nqa\nverified\nreviewed\summary'
+  fi
   printf '%s\n' "$stages"
 }
 
@@ -931,10 +991,18 @@ _can_code() {
     return 3
   fi
   local stage; stage="$(_state_get stage | tr -d '\n')"
+  # idea / product-analysis 一律拦截（尚未生成 spec）
   case "$stage" in
-    planned|dev|implemented|qa|verified|reviewed|summary) return 0 ;;
-    *) return 1 ;;
+    idea|product-analysis) return 1 ;;
   esac
+  # 其余阶段：须在“当前 track 的阶段集合”内方为合法
+  local track; track="$(_state_get track | tr -d '\n')"
+  local chain; chain="$(_track_stages "${track:-standard}")"
+  local s
+  while IFS= read -r s; do
+    [ "$s" = "$stage" ] && return 0
+  done <<< "$chain"
+  return 1
 }
 
 cmd_guard() {
@@ -1015,7 +1083,7 @@ cmd_status() {
   branch="$(_state_get branch)"
   updated="$(_state_get updated_at)"
 
-  local chain; chain="$(_stage_chain)"
+  local chain; chain="$(_stage_chain "$(_state_get track)")"
 
   # 渲染阶段链进度
   local line="" cur_done=0
@@ -1662,6 +1730,14 @@ d["changes"][s]["completed"]=c
 json.dump(d,open(f,"w"),ensure_ascii=False,indent=2)
 PY
   fi
+}
+
+# 写入当前活跃变更的 track（档位对应的轨道）；缺省 standard
+_set_track() {
+  local track="${1:-standard}" slug="$2"
+  [ -z "$slug" ] && slug="$(_state_active)"
+  [ -z "$slug" ] && { warn "尚无活跃变更，无法写入 track"; return 1; }
+  _state_set "$slug" track "$track"
 }
 
 cmd_help() {

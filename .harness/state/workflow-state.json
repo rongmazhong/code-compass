@@ -1,58 +1,22 @@
 {
   "tool": "code-compass",
-  "active": "parallel-state",
+  "active": "sop-tiers",
   "changes": {
-    "parallel-state": {
+    "sop-tiers": {
       "stage": "verified",
-      "branch": "feat/parallel-state",
-      "track": "",
+      "branch": "feat/sop-tiers",
+      "track": "standard",
       "vapd_id": "",
-      "updated_at": "2026-07-15T01:18:49Z",
+      "updated_at": "",
       "completed": [
+        "idea",
+        "product-analysis",
+        "planned",
         "dev",
         "implemented",
-        "planned",
-        "product-analysis",
         "qa",
-        "reviewed",
-        "summary",
         "verified"
       ]
-    },
-    "sop-tiers": {
-      "stage": "planned",
-      "branch": "",
-      "track": "",
-      "vapd_id": "",
-      "updated_at": ""
-    },
-    "qa-automation": {
-      "stage": "planned",
-      "branch": "",
-      "track": "",
-      "vapd_id": "",
-      "updated_at": ""
-    },
-    "status-activate-cmd": {
-      "stage": "planned",
-      "branch": "",
-      "track": "",
-      "vapd_id": "",
-      "updated_at": ""
-    },
-    "init-detect": {
-      "stage": "planned",
-      "branch": "",
-      "track": "",
-      "vapd_id": "",
-      "updated_at": ""
-    },
-    "pa-efficiency": {
-      "stage": "planned",
-      "branch": "",
-      "track": "",
-      "vapd_id": "",
-      "updated_at": ""
     }
   }
 }
