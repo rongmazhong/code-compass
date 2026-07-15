@@ -41,6 +41,34 @@ CLI 已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.m
   用户未显式给定时**不要**臆造 ID。
 - **输出诊断小结**：一句话问题本质 + 档位 + 候选标记（+ VAPD ID，若有），作为后续探索的输入。
 
+## 档位（tier / track）与命令参数
+
+`product-analysis` 通过 `--track` 选定档位，决定后续状态机阶段链（见 `config.json.tracks`）：
+
+| track | 阶段链（裁剪后） | 适用 |
+|--------|----------------|------|
+| `research` | idea→product-analysis→planned→dev→summary | 研究型，探索后即收尾，不进实现链 |
+| `small` | idea→…→implemented→qa→verified→summary | 小特性，跳过 `review` |
+| `standard` | idea→…→verified→reviewed→summary | 中特性（**默认**） |
+| `standard+` | 同 `standard` | 大特性，强调评审 |
+| `refactor` | 同 `standard` | 重构 |
+
+- 默认 `standard`；`status activate` 会按当前 track 裁剪"下一步"命令（如 `small` 在 `verified` 后提示收尾/wiki 而非 `review`）。
+- 档位在创建变更工作区时写入 `workflow-state.json` 的 `track` 字段（`_set_track`）。
+
+命令参数（全部可选，位置参数为变更名称）：
+
+| 参数 | 形式 | 说明 |
+|------|------|------|
+| `[name]` | `product-analysis <name>` | 变更名称（kebab-case），交互式也会再问一次 |
+| `--track <t>` | `--track standard+` | 选档位，默认 `standard`；非法值报错 |
+| `--vapd <ID>` | `--vapd VR12345` | 显式记录 VAPD 标识（VR/VB/VT 开头） |
+| `--append "文本"` | `--append "决策点"` / `--append <slug> "文本"` / 管道 | **仅追加**一条澄清/决策到 `.harness/issues.md`（单文件日志），不重建 spec；无 spec 也可累积 |
+| `--force <name>` | `product-analysis --force c` | 跳过交互命名，直接脚手架 `proposal.md`/`tasks.md`/`specs/` 并置 `product-analysis` 阶段 |
+
+> `--append` 把"澄清/决策"从八步流程里抽离：无需走完也能累积上下文到 `issues.md`；
+> `--force` 在已想清楚时省去交互，直接拿到工作区。
+
 ## 步骤 2 · 并行探索（内部代码 + 外部资源）
 
 - **内部**：用 `Task` 子代理并行扫描相关代码、现有 `specs/`、`.harness/openspec/specs/`、`docs/`，汇总：
