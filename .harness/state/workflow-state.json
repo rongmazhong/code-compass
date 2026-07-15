@@ -23,14 +23,16 @@
       "completed": []
     },
     "skill-native-redesign": {
-      "stage": "verified",
+      "stage": "reviewed",
       "branch": "feat/skill-native-redesign",
       "track": "refactor",
       "vapd_id": "",
-      "updated_at": "2026-07-15T10:27:18Z",
+      "updated_at": "2026-07-15T10:30:00Z",
       "completed": [
         "product-analysis",
-        "dev"
+        "dev",
+        "qa",
+        "reviewed"
       ]
     }
   }

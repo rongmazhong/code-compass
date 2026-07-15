@@ -1,0 +1,22 @@
+[
+  { "query": "我们老板让我给后台加个导出 Excel 的功能，但我自己都说不清具体要导出哪些字段、按什么维度分组", "should_trigger": true },
+  { "query": "新项目想接进你们的开发指南针流程里，帮我在当前仓库初始化一下运行基座", "should_trigger": true },
+  { "query": "我在写登录模块，现在能直接开搞了吗？先帮我校验下当前阶段让不让动手", "should_trigger": true },
+  { "query": "这个需求 VR20481 我已经想清楚了，按规范提交一下：feat 完成 token 刷新接口", "should_trigger": true },
+  { "query": "帮我记一下这个缺陷编号 VB3302，后面提交要用", "should_trigger": true },
+  { "query": "feature/payment 分支开发完了，跑下 QA 看看测试和静态检查过没过", "should_trigger": true },
+  { "query": "我想看看现在工作流卡在哪个阶段了，顺便激活下一步自动流程", "should_trigger": true },
+  { "query": "这个模块要写进项目 wiki，更新一下概览和架构文档", "should_trigger": true },
+  { "query": "我要在 feat/search 上开发，先给我建个 git worktree 把改动隔离起来", "should_trigger": true },
+  { "query": "老项目的 harness 配置太旧了，刷新一下 code-compass 的 harness 配置", "should_trigger": true },
+  { "query": "需求分析一下我们到底要不要做客户端 App", "should_trigger": true },
+  { "query": "出个方案，设计下这个权限系统该怎么落地", "should_trigger": true },
+  { "query": "帮我用 Python 写个脚本，把下载目录里一堆照片按拍摄日期批量重命名", "should_trigger": false },
+  { "query": "git commit -m 'fix login bug' 这样提交可以吗", "should_trigger": false },
+  { "query": "我想学一下 bash 脚本怎么写，有没有入门教程", "should_trigger": false },
+  { "query": "把我们项目的 README 重新排版得好看一点，加些 badges", "should_trigger": false },
+  { "query": "帮我 review 一下我刚提的 PR，看看有没有问题", "should_trigger": false },
+  { "query": "帮我把这个服务部署到生产环境，用蓝绿发布", "should_trigger": false },
+  { "query": "我想用 gstack 的 /ship 把这个分支发布掉", "should_trigger": false },
+  { "query": "给 utils.py 里的 parse_config 函数补几个单元测试", "should_trigger": false }
+]
