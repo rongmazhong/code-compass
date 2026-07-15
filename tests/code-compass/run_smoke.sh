@@ -4,7 +4,7 @@
 # 验证「移除 CLI 后，scripts/ 机械工具层行为与重构前一致」。
 set -uo pipefail
 
-SCRIPTS="$(cd "$(dirname "$0")/.." && pwd)/scripts"
+SCRIPTS="$(cd "$(dirname "$0")/../.." && pwd)/skills/code-compass/scripts"
 cc() { bash "$SCRIPTS/$1.sh" "${@:2}"; }
 pass=0; fail=0
 
@@ -86,13 +86,12 @@ check "R6 qa advances to verified" r6_qa
 
 # R7 语法 + 函数可达（lib + scripts + _bootstrap）
 r7_syntax() {
-  root="$(cd "$SCRIPTS/.." && pwd)"
-  for f in "$root"/lib/*.sh "$root"/lib/cmds/*.sh "$root"/scripts/*.sh; do
+  for f in "$SCRIPTS"/*.sh; do
     bash -n "$f" || return 1
   done
-  bash -c "source '$SCRIPTS/_bootstrap.sh'; type cmd_init cmd_guard cmd_commit cmd_qa cmd_upgrade >/dev/null 2>&1"
+  bash -c "source '$SCRIPTS/_common.sh'; type cmd_init cmd_guard cmd_commit cmd_qa cmd_upgrade >/dev/null 2>&1"
 }
-check "R7 all lib/scripts pass bash -n + expose cmds" r7_syntax
+check "R7 all scripts pass bash -n + expose cmds" r7_syntax
 
 # R8 state.sh 读写
 r8_state() {

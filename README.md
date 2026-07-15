@@ -146,7 +146,9 @@ code-compass/
 └── skills/
     └── code-compass/        # 以 skills 注册表规范分发的「开发指南针」skill
         ├── SKILL.md         # skill 入口：加载整个库的总说明
-        ├── scripts/         # 可独立运行的机械工具脚本（bash scripts/<x>.sh）
+        ├── scripts/         # 唯一代码目录：可独立运行的机械工具脚本
+        │   ├── _common.sh   #   共享实现（json/state/stages/detect/docs/worktree 等底层函数）
+        │   └── <x>.sh       #   各能力自实现：bash scripts/<x>.sh
         ├── skills/          # 各子能力的方法论（agent 可读的子 skill）
         │   ├── using-code-compass/SKILL.md
         │   ├── init/SKILL.md
@@ -167,7 +169,7 @@ code-compass/
             ├── proposal.md
             ├── tasks.md
             └── spec.md
-```
+# 注：仓库根 `tests/code-compass/` 为测试目录，不随 skill 包分发（已从 skills/code-compass/tests 移出）
 
 目标项目被 `init` 后会产生：
 

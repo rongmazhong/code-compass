@@ -27,7 +27,7 @@
 
 | 脚本 | 职责 | 边界 |
 |------|------|------|
-| `_bootstrap.sh` | 共享引导 | 解析 `CC_ROOT`（软链感知）、`source lib/*.sh`；被各脚本 `source`，不直接执行 |
+| `_common.sh` | 共享实现 | 解析 `CC_ROOT`（软链感知）、承载 json/state/stages/detect/docs/worktree 等底层函数与 `cmd_*` 命令实现；被各脚本 `source`，不直接执行 |
 | `init-harness.sh` | 初始化运行基座 | 生成 `.harness/`（state/rules/openspec）、`docs/` 脚手架、注入 AGENTS.md 路由段 |
 | `product-analysis.sh` | 脚手架需求分析工作区 | 生成 `proposal.md`/`tasks.md`/`specs/`；`--append` 追加澄清、`--force` 直接建工作区 |
 | `dev.sh` | 基于 spec 开发 | 开头调 `guard.sh` 闸门、调 `worktree.sh` 隔离；`--force` 强制进入 |
@@ -42,19 +42,13 @@
 | `use.sh` | 注册启用 | 安装校验 + init 校验 + AGENTS.md 校验 + 打印状态卡 |
 | `state.sh` | 状态读写 | `get`/`set`/`set-stage`/`set-vapd`，供其它脚本/子 skill 复用 |
 
-## 共享实现（skills/code-compass/lib/）
+## 共享实现（skills/code-compass/scripts/_common.sh）
 
-被 `scripts/*.sh` 按需 `source` 的底层函数库，不再是「主入口 source 的对象」。
+`lib/` 已移除，原共享函数已并入 `scripts/_common.sh`，被各 `scripts/<x>.sh` 在开头 `source` 复用，不再是独立 lib 层。
 
 | 文件 | 职责 | 关键函数 |
 |------|------|----------|
-| `lib/json.sh` | JSON 读写 | `_json_valid` / `_json_get`(jq) / `_json_get_bash`(兜底) / `_json_set` / `_json_add_completed`；**jq 缺失时回退 bash** |
-| `lib/state.sh` | 状态文件 | `_state_ensure_file` / `_state_migrate` / `_state_active` / `_state_list` / `_state_set` / `_set_stage` / `_set_track` / `_set_vapd` |
-| `lib/stages.sh` | 阶段与 track | `_track_stages` / `_stage_chain` / `_next_stage_in_track` / `_stage_cmd` / `_can_code`（闸门） |
-| `lib/detect.sh` | 项目探测 | `_detect_project` / `_gen_rules` / `_dir_roles` / `_coding_rules` / `_gen_guard_rules` / `_fill_overview`；`init` 时生成 `rules/` 与 AGENTS.md 路由 |
-| `lib/docs.sh` | wiki 生成 | `_gen_docs` / `_gen_index` / `_write_doc` / `_tree` / `_module_rows`；`wiki` 时重建 `docs/` |
-| `lib/worktree.sh` | worktree | `_setup_worktree`；`dev` 时创建/复用 `<父目录>/worktrees/<slug>` |
-| `lib/cmds/` | （保留）历史命令实现 | 已迁至 `scripts/`，保留以兼容 |
+| `scripts/_common.sh` | JSON / 状态 / 阶段 / 探测 / 文档 / worktree 共享实现 | 原 `lib/json.sh` 的 `_json_valid` / `_json_get`(jq) / `_json_get_bash`(兜底) / `_json_set` / `_json_add_completed`；原 `lib/state.sh` 的 `_state_ensure_file` / `_state_migrate` / `_state_active` / `_state_list` / `_state_set` / `_set_stage` / `_set_track` / `_set_vapd`；原 `lib/stages.sh` 的 `_track_stages` / `_stage_chain` / `_next_stage_in_track` / `_stage_cmd` / `_can_code`（闸门）；原 `lib/detect.sh` 的 `_detect_project` / `_gen_rules` / `_dir_roles` / `_coding_rules` / `_gen_guard_rules` / `_fill_overview`；原 `lib/docs.sh` 的 `_gen_docs` / `_gen_index` / `_write_doc` / `_tree` / `_module_rows`；原 `lib/worktree.sh` 的 `_setup_worktree`；以及历史 `lib/cmds/` 命令实现（已并入） |
 
 ## 运行期模块（每个被管理项目的 .harness/）
 
@@ -69,7 +63,7 @@
 
 ## 模块关系
 
-- 子 skill 描述「何时触发 + 怎么调脚本」；机械执行统一收敛到 `scripts/*.sh`，脚本内部 `source lib/*.sh` 复用底层函数。
+- 子 skill 描述「何时触发 + 怎么调脚本」；机械执行统一收敛到 `scripts/*.sh`，脚本内部 `source _common.sh` 复用底层函数。
 - 所有脚本读写同一 `.harness/state/workflow-state.json`，保证 `guard`/`status`/`commit` 结果一致。
-- `init-harness.sh` 通过 `lib/detect.sh` 生成 `rules/` 与 AGENTS.md 路由段，使项目接入方法论。
+- `init-harness.sh` 通过 `_common.sh` 内的探测函数生成 `rules/` 与 AGENTS.md 路由段，使项目接入方法论。
 - 无 CLI 主入口：`dev`/`commit` 子 skill 各自在开头调 `bash scripts/guard.sh` 强制「先分析后开发」。

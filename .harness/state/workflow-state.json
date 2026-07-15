@@ -1,6 +1,6 @@
 {
   "tool": "x",
-  "active": "skill-native-redesign",
+  "active": "skill-layout-cleanup",
   "changes": {
     "cc-upgrade": {
       "stage": "verified",
@@ -35,6 +35,14 @@
         "reviewed",
         "summary"
       ]
+    },
+    "skill-layout-cleanup": {
+      "stage": "dev",
+      "branch": "feat/skill-layout-cleanup",
+      "track": "refactor",
+      "vapd_id": "",
+      "updated_at": "2026-07-15T11:24:00Z",
+      "completed": []
     }
   }
 }

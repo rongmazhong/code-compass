@@ -7,5 +7,5 @@
 set -euo pipefail
 _src="${BASH_SOURCE[0]}"
 _dir="$(cd "$(dirname "$_src")" && pwd)"
-source "$_dir/_bootstrap.sh"
+source "$_dir/_common.sh"
 cmd_review "$@"

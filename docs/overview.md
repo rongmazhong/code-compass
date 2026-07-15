@@ -14,7 +14,7 @@ spec，`dev` / `commit` 子 skill 开头调 `bash scripts/guard.sh` 会在阶段
 
 ## 技术栈
 
-- 语言：纯 Bash（POSIX 友好）；机械活由 `scripts/*.sh` 独立脚本承担，`lib/*.sh` 为共享函数库
+- 语言：纯 Bash（POSIX 友好）；机械活由 `scripts/*.sh` 独立脚本承担，共享函数并入 `scripts/_common.sh`（被各脚本 `source`）
 - 构建系统：无（不需要编译/依赖安装，分发给 agent 直接执行）
 - 关键依赖：`jq`（解析 JSON 状态，缺失时回退 bash 实现）、git（worktree / 提交）、标准 Unix 工具
 - 分发：把本仓库放进 agent 的 skills 目录（如 `~/.agents/skills/code-compass/`）即可用，**无需 alias / PATH / python3 前置**

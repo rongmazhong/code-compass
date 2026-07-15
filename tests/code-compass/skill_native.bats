@@ -3,7 +3,7 @@
 # 与 tests/run_smoke.sh 一一对应。bats-core 可用时：
 #   bats skills/code-compass/tests/skill_native.bats
 
-SCRIPTS="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)/scripts"
+SCRIPTS="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)/skills/code-compass/scripts"
 cc() { bash "$SCRIPTS/$1.sh" "${@:2}"; }
 
 setup() {
