@@ -1,10 +1,10 @@
 {
   "tool": "code-compass",
-  "active": "qa-automation",
+  "active": "status-activate-cmd",
   "changes": {
-    "qa-automation": {
+    "status-activate-cmd": {
       "stage": "verified",
-      "branch": "feat/qa-automation",
+      "branch": "feat/status-activate-cmd",
       "track": "standard",
       "vapd_id": "",
       "updated_at": "",

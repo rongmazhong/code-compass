@@ -876,7 +876,7 @@ except Exception:
 PY
 )"
     fi
-    [ -z "$stages" ] && stages=$'idea\nproduct-analysis\nplanned\ndev\nimplemented\nqa\nverified\nreviewed\summary'
+    [ -z "$stages" ] && stages=$'idea\nproduct-analysis\nplanned\ndev\nimplemented\nqa\nverified\nreviewed\nsummary'
   fi
   printf '%s\n' "$stages"
 }
@@ -902,12 +902,46 @@ except Exception:
 PY
 )"
     fi
-    [ -z "$stages" ] && stages=$'idea\nproduct-analysis\nplanned\ndev\nimplemented\nqa\nverified\nreviewed\summary'
+    [ -z "$stages" ] && stages=$'idea\nproduct-analysis\nplanned\ndev\nimplemented\nqa\nverified\nreviewed\nsummary'
   fi
   printf '%s\n' "$stages"
 }
 
 # 根据当前 stage 返回"激活自动化"所需的下一步动作说明（参考 develop-workflow-rong 编排）
+# 取 track 阶段链中“当前阶段之后”的第一个阶段（无则空）
+_next_stage_in_track() {
+  local st="$1" track="${2:-standard}" chain; chain="$(_track_stages "$track")"
+  local found=0
+  while IFS= read -r s; do
+    [ "$found" -eq 1 ] && { echo "$s"; return; }
+    [ "$s" = "$st" ] && found=1
+  done <<< "$chain"
+}
+
+# 依据 stage（及 track）输出“可直接复制执行”的下一步命令
+_stage_cmd() {
+  local st="$1" track="${2:-standard}" slug="${3:-<slug>}"
+  local pair
+  case "$st" in
+    idea)              pair="product-analysis|code-compass product-analysis <name>" ;;
+    product-analysis)  pair="planned|code-compass status   # 确认 spec 就绪" ;;
+    planned)           pair="dev|code-compass dev $slug" ;;
+    dev|implemented)   pair="verified|code-compass qa" ;;
+    qa)                pair="verified|code-compass verify" ;;
+    verified)          pair="reviewed|code-compass review" ;;
+    reviewed)          pair="summary|code-compass wiki" ;;
+    summary)           echo "# 流程已收尾，可运行 code-compass wiki 更新文档"; return ;;
+    *)                 echo "# 未知阶段 '$st'"; return ;;
+  esac
+  local target="${pair%%|*}" cmd="${pair#*|}"
+  # R2：目标阶段不在当前 track 中则顺延到 track 里实际存在的下一阶段命令
+  if ! printf '%s\n' "$(_track_stages "$track")" | grep -qx "$target"; then
+    local nx; nx="$(_next_stage_in_track "$st" "$track")"
+    if [ -n "$nx" ]; then _stage_cmd "$nx" "$track" "$slug"; return; fi
+  fi
+  echo "$cmd"
+}
+
 _stage_action() {
   local st="$1"
   case "$st" in
@@ -1126,7 +1160,7 @@ EOF
 
 🚀 激活自动化流程（参考 develop-workflow-rong 状态机）
    当前阶段: ${stage:-idea}
-$(_stage_action "${stage:-idea}")
+$(_stage_cmd "${stage:-idea}" "$(_state_get track)" "$(_state_active)")
    提示：agent 加载本步骤对应 skill，执行后将 stage 写入 workflow-state.json，
    下次运行 'code-compass status activate' 即自动从断点续跑。
 EOF
