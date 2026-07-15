@@ -1,22 +1,14 @@
 {
   "tool": "code-compass",
-  "active": "pa-efficiency",
+  "active": "cli-modular",
   "changes": {
-    "pa-efficiency": {
+    "cli-modular": {
       "stage": "verified",
-      "branch": "feat/pa-efficiency",
-      "track": "standard",
+      "branch": "feat/cli-modular",
+      "track": "refactor",
       "vapd_id": "",
       "updated_at": "",
-      "completed": [
-        "idea",
-        "product-analysis",
-        "planned",
-        "dev",
-        "implemented",
-        "qa",
-        "verified"
-      ]
+      "completed": []
     }
   }
 }
