@@ -42,7 +42,7 @@ cmd_product_analysis() {
       text="$name"                             # 形式：--append "文本"
     fi
     [ -z "$text" ] && text="$(cat)"           # 形式：--append（从 STDIN 读）
-    [ -z "$text" ] && die "请提供澄清/决策文本，或使用形式：code-compass product-analysis --append \"文本\""
+    [ -z "$text" ] && die "请提供澄清/决策文本，或使用形式：bash scripts/product-analysis.sh --append \"文本\""
     _append_issue "$slug" "$text"
     return $?
   fi
@@ -95,7 +95,7 @@ cmd_product_analysis() {
 下一步：请 agent 加载 skills/product-analysis/SKILL.md，按"八步流程"推进：
    1.需求诊断 → 2.并行探索 → 3.澄清发问 → 4.对抗验证+方案
    → 5.展示设计 → 6.生成 spec → 7.spec 自检对抗 → 8.交接计划
-   完成后运行:  code-compass dev $slug
+    完成后运行:  bash scripts/dev.sh $slug
 EOF
 }
 

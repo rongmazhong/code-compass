@@ -1,7 +1,7 @@
 ---
 name: worktree
 description: >
-   管理 code-compass 开发用 git worktree（list / prune）。运行 `code-compass worktree [list|prune]` 或说"查看 worktree / 清理 worktree"时触发。
+    管理 code-compass 开发用 git worktree（list / prune）。用户说「查看 worktree / 清理 worktree / 合并后收拾一下」或 dev 之后、合并分支前后的维护动作时加载。
 ---
 
 # worktree —— 开发用 git worktree 管理
@@ -12,18 +12,18 @@ description: >
 
 ## 触发条件
 
-- 用户运行 `code-compass worktree list` / `code-compass worktree prune`
+- 用户加载 `worktree` 子 skill（agent 调 `bash scripts/worktree.sh [list|prune]`）
 - 用户说"看看 worktree"、"清理 worktree"、"合并后收拾一下"
 - `dev` 之后、合并分支前后的维护动作
 
 ## 用法
 
-### `code-compass worktree`（默认 list）
+### `bash scripts/worktree.sh`（默认 list）
 
 - 目标项目须是 git 仓库，否则提示"不是 git 仓库"。
 - 列出当前项目的 git worktree（`git worktree list`），含各 worktree 路径、所在分支、是否 bare。
 
-### `code-compass worktree prune`
+### `bash scripts/worktree.sh prune`
 
 - `git worktree prune`：清理已被删除 worktree 残留的注册信息（不删目录本身）。
 - 若需真正删除某个 worktree 目录，用：`git worktree remove <路径>`。

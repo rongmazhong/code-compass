@@ -1,7 +1,7 @@
 ---
 name: using-code-compass
 description: >
-    注册并启用 code-compass 个人 skill 库。运行 `code-compass using-code-compass` 或说"启用指南针 / 加载我的 skill 库 / using-code-compass"时触发。
+    注册并启用 code-compass 个人 skill 库。用户说「启用指南针 / 加载我的 skill 库 / using-code-compass」或会话开始希望启用本库方法论编排时加载。
 ---
 
 # using-code-compass
@@ -12,13 +12,13 @@ description: >
 
 ## 触发条件
 
-- 用户运行 `code-compass using-code-compass`
+- 用户加载 `using-code-compass` 子 skill（其散文会指示 agent 调 `bash scripts/use.sh`）
 - 用户说"启用 code-compass"、"加载我的 skill 库"、"接入指南针"、"using-code-compass"
 - 会话开始时希望启用本库的方法论编排（先分析后开发的强制约束）
 
 ## 执行流程（agent 据此行动）
 
-1. 运行 `code-compass using-code-compass`（CLI 内部执行）：
+1. 加载 `using-code-compass` 子 skill（其散文会指示 agent 调 `bash scripts/use.sh`）：
    - **安装校验**：确认 code-compass 已全局安装到 `$CODE_COMPASS_SKILLS_DIR/code-compass`
      （默认 `~/.agents/skills/code-compass`）；缺失则提示 `npx skills add rongmazhong/code-compass`。
    - **init 校验（需求1）**：检测目标项目是否存在 `.harness/`；**不存在则自动执行 `init`**

@@ -1,7 +1,7 @@
 ---
 name: init
 description: >
-   在当前项目初始化 code-compass 运行环境（.harness/ + docs/ + AGENTS.md 路由）。运行 `code-compass init` 或新项目首次使用时触发。
+    在当前项目初始化 code-compass 运行环境（.harness/ + docs/ + AGENTS.md 路由）。用户说「初始化 / init / 接入项目 / 首次使用」或按本库方法论铺设运行基座时加载。
 ---
 
 # init
@@ -10,7 +10,7 @@ description: >
 
 ## 触发条件
 
-- 用户运行 `code-compass init`
+- 用户加载 `init` 子 skill（agent 调 `bash scripts/init-harness.sh`）
 - 用户在新仓库中首次使用 code-compass
 - `using-code-compass` 检测到目标项目缺少 `.harness/`
 
@@ -35,8 +35,8 @@ description: >
     - `docs/modules.md`：核心模块（目录职责与边界）
     - `docs/api.md`：功能清单及 API 接口文档
 5. **交互式补全 `docs/overview.md`**（仅 TTY）：init 以提问方式逼出"项目目的 / 技术栈 /
-   目标用户 / 范围"，写入概览，并在文末追加「⏭️ 下一步：运行 `code-compass product-analysis`」
-   作为启动提示；非交互（管道 / agent 调用）时保留脚手架占位，不卡流程。
+    目标用户 / 范围"，写入概览，并在文末追加「⏭️ 下一步：加载 `product-analysis` 子 skill」
+    作为启动提示；非交互（管道 / agent 调用）时保留脚手架占位，不卡流程。
 6. 生成 `.harness/rules/guard.md`：方法论**强制契约**（先分析后开发的硬默认、触发词→必调
    skill 映射、「继续/直接做」闸门、偏离提醒、豁免机制），把软纪律硬化为 agent 必须遵循的约束。
 7. 向 `AGENTS.md` 注入 code-compass 路由段（用 `MARKER` 包裹，避免重复）：

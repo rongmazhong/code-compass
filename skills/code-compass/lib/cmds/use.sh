@@ -30,9 +30,9 @@ cmd_use() {
 
 ✅ code-compass 已启用。
 
-本工具不创建任何软链；全局安装位于 $SKILLS_DIR/code-compass。
-运行命令请使用完整路径（建议为其配置 alias 或加入 PATH）：
-  $CC_ROOT/code-compass init | product-analysis | dev
+本工具不创建任何软链；skill 库位于 $SKILLS_DIR/code-compass。
+需要机械操作时，由对应子 skill 散文指示 agent 调 scripts/*.sh：
+  bash scripts/init-harness.sh | bash scripts/product-analysis.sh | bash scripts/dev.sh
 
 agent 触发各子 skill：读取 $CC_ROOT/skills/<name>/SKILL.md
 各 skill 触发条件见对应 SKILL.md 的 frontmatter description。

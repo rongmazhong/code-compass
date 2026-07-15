@@ -23,7 +23,7 @@ cmd_commit() {
         shift ;;
     esac
   done
-  [ -z "$type" ] && die "用法: code-compass commit [--exempt] <type> <描述...>（type: feat/fix/docs/refactor/...）"
+  [ -z "$type" ] && die "用法: bash scripts/commit.sh [--exempt] <type> <描述...>（type: feat/fix/docs/refactor/...）"
   case "$type" in
     feat|fix|docs|refactor|test|chore|style|perf|build|ci) ;;
     *) warn "非常规 type: $type（允许 feat/fix/docs/refactor 等）" ;;
@@ -43,8 +43,8 @@ cmd_commit() {
     case "$(_state_get stage | tr -d '\n')" in
       idea|product-analysis)
         die "⚠️  提交拦截：当前阶段 '$(_state_get stage | tr -d '\n')' 尚未完成需求分析，不能直接提交实现代码。
-          > 先运行: code-compass product-analysis <name>
-          > 确需绕过: code-compass commit --exempt $type $desc" ;;
+          > 先运行: bash scripts/product-analysis.sh <name>
+          > 确需绕过: bash scripts/commit.sh --exempt $type $desc" ;;
     esac
   fi
 

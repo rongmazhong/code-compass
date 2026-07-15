@@ -44,8 +44,8 @@ _gen_index() {
 3. 读 modules.md → 核心模块职责
 4. 读 api.md → 对外接口
 
-> 更新文档：运行 \`code-compass wiki\` 重建索引；
-> 或 \`code-compass wiki <overview|architecture|modules|api>\` 重建指定文档。
+> 更新文档：加载 \`wiki\` 子 skill（运行 \`bash scripts/wiki.sh\`）重建索引；
+> 或 \`bash scripts/wiki.sh <overview|architecture|modules|api>\` 重建指定文档。
 EOF
 }
 

@@ -18,7 +18,7 @@ cmd_dev() {
 
   if [ -z "$slug" ]; then
     local latest; latest="$(ls -1 "$TARGET_DIR/.harness/openspec/changes" 2>/dev/null | tail -1 || true)"
-    [ -z "$latest" ] && die "未找到任何变更，请先运行: code-compass product-analysis <name>"
+    [ -z "$latest" ] && die "未找到任何变更，请先运行: bash scripts/product-analysis.sh <name>"
     slug="$latest"
     warn "未指定变更，自动选择最新一个: $slug"
   fi
@@ -32,7 +32,7 @@ cmd_dev() {
       cp "$CC_ROOT/templates/tasks.md"   "$change_dir/tasks.md"
       cp "$CC_ROOT/templates/spec.md"    "$change_dir/specs/core/spec.md"
     else
-      die "变更不存在: $slug（请先运行 code-compass product-analysis $slug）"
+      die "变更不存在: $slug（请先运行 bash scripts/product-analysis.sh $slug）"
     fi
   fi
 
@@ -43,8 +43,8 @@ cmd_dev() {
     elif ! _can_code; then
       local st; st="$(_state_get stage | tr -d '\n')"
       die "⚠️  闸门拦截：当前阶段 '$st' 尚未生成已确认 spec，禁止进入 dev。
-        > 先运行: code-compass product-analysis $slug
-        > 如需强制绕过: code-compass dev --force $slug （请在回复中说明豁免理由）"
+        > 先运行: bash scripts/product-analysis.sh $slug
+        > 如需强制绕过: bash scripts/dev.sh --force $slug （请在回复中说明豁免理由）"
     fi
     # 存在 state 且 stage>=planned，但变更工作区无 spec 文件，也视为偏离
     if ! ls "$change_dir"/specs/*/spec.md >/dev/null 2>&1; then
@@ -71,7 +71,7 @@ cmd_dev() {
    3. TDD             红-绿-重构循环
    4. subagent        逐任务实现
    5. verification     完成前验证
-   开发完成后运行:  code-compass worktree prune  （合并/删除分支前清理 worktree）
+   开发完成后运行:  bash scripts/worktree.sh prune  （合并/删除分支前清理 worktree）
 EOF
 }
 

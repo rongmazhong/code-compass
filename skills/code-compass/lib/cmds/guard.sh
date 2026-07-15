@@ -12,13 +12,13 @@ cmd_guard() {
   local state="$TARGET_DIR/.harness/state/workflow-state.json"
   if [ ! -f "$state" ]; then
     warn "未检测到 $state（项目尚未 init）。"
-    warn "动手前请先运行 'code-compass init' 完成方法论初始化。"
+    warn "动手前请先运行 'bash scripts/init-harness.sh' 完成方法论初始化。"
     return 1
   fi
   # R4: 区分"状态文件损坏"与"阶段偏离"
   if ! _json_valid "$state"; then
     warn "⚠️  状态文件损坏：$state 不是合法 JSON，无法校验闸门。"
-    warn "    请修复该文件，或删除后重新运行 code-compass init。"
+    warn "    请修复该文件，或删除后重新运行 bash scripts/init-harness.sh。"
     return 1
   fi
   local stage spec
@@ -30,8 +30,8 @@ cmd_guard() {
     return 0
   fi
   warn "⚠️  你正在偏离方法论：当前阶段 '$stage' 仍在分析之前，尚未生成已确认 spec。"
-  warn "    禁止直接进入编码。请先运行: code-compass product-analysis <name>"
-  warn "    确需绕过可用: code-compass dev --force <name>（并说明豁免理由）"
+  warn "    禁止直接进入编码。请先运行: bash scripts/product-analysis.sh <name>"
+  warn "    确需绕过可用: bash scripts/dev.sh --force <name>（并说明豁免理由）"
   return 1
 }
 

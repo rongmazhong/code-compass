@@ -119,7 +119,7 @@ cmd_upgrade() {
 
   # 项目级：刷新当前项目 .harness/ harness 配置（仅 config.json + workflow-state.json）
   if [ ! -d "$TARGET_DIR/.harness" ]; then
-    warn "当前项目尚未 init（无 .harness/），无法 upgrade。请先运行: code-compass init"
+    warn "当前项目尚未 init（无 .harness/），无法 upgrade。请先运行: bash scripts/init-harness.sh"
     return 1
   fi
   # _config_merge / _state_upgrade 仅输出一个整数；直接取、剥非数字，避免

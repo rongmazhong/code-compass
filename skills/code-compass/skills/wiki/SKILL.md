@@ -1,7 +1,7 @@
 ---
 name: wiki
 description: >
-   更新或重建项目 wiki（docs/）。运行 `code-compass wiki [topic]` 或说"更新文档 / 写 API 文档 / 同步 wiki"时触发。
+    更新或重建项目 wiki（docs/）。用户说「更新文档 / 写 API 文档 / 同步 wiki / 补架构说明」或实现完功能需同步 docs 时加载。
 ---
 
 # wiki —— 项目 wiki 更新
@@ -11,7 +11,7 @@ description: >
 
 ## 触发条件
 
-- 用户运行 `code-compass wiki` 或 `code-compass wiki <topic>`
+- 用户加载 `wiki` 子 skill（agent 调 `bash scripts/wiki.sh [topic]`）
 - 用户说"更新文档"、"补架构说明"、"写 API 文档"
 - 实现完一个功能后，需要同步 `docs/api.md` 与 `docs/modules.md`
 
@@ -27,8 +27,8 @@ description: >
 
 ## 执行流程
 
-1. `code-compass wiki`：重建 `INDEX.md` 并补建缺失文档（不覆盖已有内容）。
-2. `code-compass wiki <overview|architecture|modules|api>`：重建指定文档脚手架。
+1. `bash scripts/wiki.sh`：重建 `INDEX.md` 并补建缺失文档（不覆盖已有内容）。
+2. `bash scripts/wiki.sh <overview|architecture|modules|api>`：重建指定文档脚手架。
 3. agent 读取相关**源码**，将脚手架中的占位（`__...__`、待补充）替换为真实信息：
    - 概览：补"解决什么问题、为谁"
    - 架构：补实际分层、调用链、关键权衡

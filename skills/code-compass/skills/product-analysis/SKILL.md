@@ -1,7 +1,7 @@
 ---
 name: product-analysis
 description: >
-   柏拉图式发问收敛需求并生成已确认 spec。运行 `code-compass product-analysis [name]` 或说"需求分析 / 设计一下 / 确定范围 / 出方案"时触发。
+    柏拉图式发问收敛需求并生成已确认 spec。用户说「新功能 / 做客户端 / 实现 X / 需求分析 / 设计一下 / 确定范围 / 出方案」或按本库方法论工作、需要收敛需求生成 spec 时加载。
 ---
 
 # product-analysis —— 八步需求分析与设计流程
@@ -12,13 +12,13 @@ description: >
 
 ## 触发条件
 
-- 用户运行 `code-compass product-analysis [name]`
+- 用户加载 `product-analysis` 子 skill（其散文会指示 agent 调 `bash scripts/product-analysis.sh` 脚手架）
 - 用户说"先做需求分析"、"设计一下"、"确定范围"、"出方案"
 - `.harness/state/workflow-state.json` 的 `stage` 为 `idea` 或 `product-analysis`
 
 ## 工作目录约定
 
-CLI 已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.md` / `specs/`。
+脚手架脚本已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.md` / `specs/`。
 本流程的产出落点：
 
 - `proposal.md`   —— Why：意图、档位、决策记录、非目标
@@ -35,8 +35,8 @@ CLI 已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.m
   - *外部探索候选*：需要查官方文档 / 竞品 / 第三方 API / 社区方案的环节
   - *视觉候选*：涉及 UI / 交互 / 视觉对比，后续需截图（agent-browser）
 - **捕获 VAPD 标识**：若用户在需求描述中**显式给定**了 VAPD 标识 ID
-  （需求 `VR` 开头 / 缺陷 `VB` 开头 / 任务 `VT` 开头，如 `VR12345`、
-  `VB2024`、`VT7788`），立即用 `code-compass vapd <ID>` 将其写入
+   （需求 `VR` 开头 / 缺陷 `VB` 开头 / 任务 `VT` 开头，如 `VR12345`、
+   `VB2024`、`VT7788`），立即用 `bash scripts/vapd.sh <ID>` 将其写入
   `.harness/state/workflow-state.json` 的 `vapd_id` 字段，供后续提交携带。
   用户未显式给定时**不要**臆造 ID。
 - **输出诊断小结**：一句话问题本质 + 档位 + 候选标记（+ VAPD ID，若有），作为后续探索的输入。
@@ -53,18 +53,18 @@ CLI 已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.m
 | `standard+` | 同 `standard` | 大特性，强调评审 |
 | `refactor` | 同 `standard` | 重构 |
 
-- 默认 `standard`；`status activate` 会按当前 track 裁剪"下一步"命令（如 `small` 在 `verified` 后提示收尾/wiki 而非 `review`）。
+- 默认 `standard`；`bash scripts/status.sh activate` 会按当前 track 裁剪"下一步"命令（如 `small` 在 `verified` 后提示收尾/wiki 而非 `review`）。
 - 档位在创建变更工作区时写入 `workflow-state.json` 的 `track` 字段（`_set_track`）。
 
 命令参数（全部可选，位置参数为变更名称）：
 
 | 参数 | 形式 | 说明 |
 |------|------|------|
-| `[name]` | `product-analysis <name>` | 变更名称（kebab-case），交互式也会再问一次 |
+| `[name]` | `bash scripts/product-analysis.sh <name>` | 变更名称（kebab-case），交互式也会再问一次 |
 | `--track <t>` | `--track standard+` | 选档位，默认 `standard`；非法值报错 |
 | `--vapd <ID>` | `--vapd VR12345` | 显式记录 VAPD 标识（VR/VB/VT 开头） |
 | `--append "文本"` | `--append "决策点"` / `--append <slug> "文本"` / 管道 | **仅追加**一条澄清/决策到 `.harness/issues.md`（单文件日志），不重建 spec；无 spec 也可累积 |
-| `--force <name>` | `product-analysis --force c` | 跳过交互命名，直接脚手架 `proposal.md`/`tasks.md`/`specs/` 并置 `product-analysis` 阶段 |
+| `--force <name>` | `bash scripts/product-analysis.sh --force c` | 跳过交互命名，直接脚手架 `proposal.md`/`tasks.md`/`specs/` 并置 `product-analysis` 阶段 |
 
 > `--append` 把"澄清/决策"从八步流程里抽离：无需走完也能累积上下文到 `issues.md`；
 > `--force` 在已想清楚时省去交互，直接拿到工作区。
@@ -107,13 +107,13 @@ CLI 已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.m
 
 ## 步骤 6 · 生成 spec（罗盘到正确目录）
 
-工作区已由 CLI 预置 spec 模板 `specs/<capability>/spec.md`，按以下方式填写：
+工作区已由脚手架脚本预置 spec 模板 `specs/<capability>/spec.md`，按以下方式填写：
 
 1. **重命名能力目录**：将 `specs/<capability>/` 改名为真实能力名（kebab-case，如 `specs/user-auth/`）。
 2. **填写 proposal.md**：填"问题本质 + 档位 + 决策记录 + 非目标 + 成功信号"。（Why）
 3. **填写 specs/<capability>/spec.md**：基于模板，写 `## ADDED Requirements`，
    每条 `### Requirement: <名称>` 写"系统 SHALL ..."，并附 `#### Scenario:`（正常 + 异常）。
-   模板规范见本仓库 `templates/spec.md`（CLI 已复制一份到变更工作区）。
+    模板规范见本仓库 `templates/spec.md`（脚手架脚本已复制一份到变更工作区）。
 4. **tasks.md**：先写粗略框架，步骤 8 再细化为实施计划。
 
 路径务必落在 `.harness/openspec/changes/<slug>/` 下对应文件。
@@ -135,7 +135,7 @@ CLI 已创建 `.harness/openspec/changes/<slug>/`，含 `proposal.md` / `tasks.m
   回填 `tasks.md`（含依赖关系、顺序、验收标准）。
 - 这是 product-analysis 的**唯一终态**：交付"已确认 spec + 实施计划"。
 - 将 `.harness/state/workflow-state.json` 的 `stage` 推进到 `planned`。
-- 提示用户：运行 `code-compass dev <slug>` 进入实现（product-analysis 到此结束，不进入编码）。
+- 提示用户：加载 `dev` 子 skill 进入实现（product-analysis 到此结束，不进入编码）。
 
 ---
 

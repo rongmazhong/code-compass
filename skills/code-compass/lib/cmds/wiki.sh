@@ -46,8 +46,8 @@ EOF
 
 ✅ wiki 索引已更新（docs/INDEX.md）。
 $([ "$missing" -gt 0 ] && echo "   已补建 $missing 个缺失文档。" || echo "   四份文档均已存在，未覆盖（避免丢失人工补充）。")
-   如需重建某一文档，运行:
-     code-compass wiki <overview|architecture|modules|api>
+    如需重建某一文档，运行:
+      bash scripts/wiki.sh <overview|architecture|modules|api>
 EOF
 }
 

@@ -6,15 +6,15 @@
 _next_step() {
   local stage="$1"
   case "$stage" in
-    idea)             echo "运行 code-compass product-analysis <name> 收敛需求并生成 spec" ;;
-    product-analysis) echo "确认 spec 内容，进入 planned 后运行 code-compass dev <name>" ;;
-    planned)          echo "已就绪，运行 code-compass dev <name> 开始开发（guard 通过）" ;;
+    idea)             echo "运行 bash scripts/product-analysis.sh <name> 收敛需求并生成 spec" ;;
+    product-analysis) echo "确认 spec 内容，进入 planned 后运行 bash scripts/dev.sh <name>" ;;
+    planned)          echo "已就绪，运行 bash scripts/dev.sh <name> 开始开发（guard 通过）" ;;
     dev)              echo "开发中：完成后将 stage 推进到 implemented" ;;
     implemented)      echo "运行 qa 验证后进入 verified" ;;
     qa)               echo "QA 进行中，完成后进入 verified" ;;
     verified)         echo "运行 review 后进入 reviewed" ;;
     reviewed)         echo "运行 summary 生成总结文档" ;;
-    summary)          echo "流程已收尾，可运行 code-compass wiki 更新文档" ;;
+    summary)          echo "流程已收尾，可运行 bash scripts/wiki.sh 更新文档" ;;
     *)                echo "未知阶段 '$stage'，可手动编辑 workflow-state.json 的 stage 字段" ;;
   esac
 }
@@ -55,7 +55,7 @@ cmd_status() {
 
   if [ ! -f "$state" ]; then
     warn "未检测到 $state（项目尚未 init）。"
-    log "运行 'code-compass init' 初始化后再查看状态。"
+    log "运行 'bash scripts/init-harness.sh' 初始化后再查看状态。"
     if [ "$mode" = "activate" ] || [ "$mode" = "--activate" ]; then
       log "你也可以立即激活自动化流程：从 IDEA 阶段开始需求分析。"
     fi
@@ -77,9 +77,9 @@ cmd_status() {
       [ "$s" = "$active" ] && mark="▶ "
       printf '  %s%s\t[%s]\n' "$mark" "$s" "${st:-（未知）}"
     done <<< "$(_state_list)"
-    [ "$any" -eq 0 ] && echo "  （暂无变更，运行 code-compass product-analysis <name> 创建）"
+    [ "$any" -eq 0 ] && echo "  （暂无变更，运行 bash scripts/product-analysis.sh <name> 创建）"
     echo "────────────────────────────"
-    echo "  ▶ 标记为当前活跃变更；查看详情：code-compass status"
+    echo "  ▶ 标记为当前活跃变更；查看详情：bash scripts/status.sh"
     return 0
   fi
 
@@ -123,7 +123,7 @@ EOF
   case "$stage" in
     idea|product-analysis)
       warn "⚠️  当前阶段 '$stage' 尚未生成已确认 spec：动手写代码前应先走 product-analysis。"
-      warn "    运行 'code-compass guard' 校验阶段；用 'code-compass product-analysis <name>' 收敛需求。"
+      warn "    运行 'bash scripts/guard.sh' 校验阶段；用 'bash scripts/product-analysis.sh <name>' 收敛需求。"
       ;;
   esac
 
@@ -134,11 +134,11 @@ EOF
    当前阶段: ${stage:-idea}
 $(_stage_cmd "${stage:-idea}" "$(_state_get track)" "$(_state_active)")
    提示：agent 加载本步骤对应 skill，执行后将 stage 写入 workflow-state.json，
-   下次运行 'code-compass status activate' 即自动从断点续跑。
+    下次运行 'bash scripts/status.sh activate' 即自动从断点续跑。
 EOF
   else
-    log "运行 'code-compass status activate' 可查看当前阶段应执行的自动化动作。"
-    log "运行 'code-compass guard' 可校验当前阶段是否允许动手（偏离会拦截）。"
+    log "运行 'bash scripts/status.sh activate' 可查看当前阶段应执行的自动化动作。"
+    log "运行 'bash scripts/guard.sh' 可校验当前阶段是否允许动手（偏离会拦截）。"
   fi
 }
 

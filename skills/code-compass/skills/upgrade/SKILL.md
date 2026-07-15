@@ -1,7 +1,13 @@
-# code-compass upgrade
+---
+name: upgrade
+description: >
+    刷新已 init 项目的 harness 配置（config.json + workflow-state.json）；`--self` 从 upgrade_source 拉取并合并 skill 库。用户说「升级 / refresh harness / 配置漂移了 / 补上 tracks」或拉取新版后老项目需跟新时加载。
+---
+
+# upgrade
 
 刷新**已 init 项目**的 `.harness/` harness 配置，让老项目在 code-compass 升级后不静默失效。
-说"升级 / refresh harness / 配置漂移了 / 补上 tracks"时触发。
+说"升级 / refresh harness / 配置漂移了 / 补上 tracks"时加载。
 
 ## 触发场景
 - 用户通过 `npx skills add rongmazhong/code-compass` 拉取了新版，但**现有项目**的 `.harness/`
@@ -10,8 +16,8 @@
 
 ## 用法
 ```
-code-compass upgrade            # 仅刷新当前项目的 harness 配置
-code-compass upgrade --self    # 额外从 config.json 的 upgrade_source 拉取并合并 skill 库
+bash scripts/upgrade.sh            # 仅刷新当前项目的 harness 配置
+bash scripts/upgrade.sh --self    # 额外从 config.json 的 upgrade_source 拉取并合并 skill 库
 ```
 
 ## 行为契约（与 spec 对齐）

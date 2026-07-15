@@ -1,56 +1,55 @@
 ---
 name: code-compass
 description: >
-   code-compass 总入口：spec 驱动、状态机编排、先分析后开发的强制约束方法论库。用户要启用本库、运行其命令（init / product-analysis / dev / guard 等）或按本库方法论工作时加载。
+   code-compass 总入口：spec 驱动、状态机编排、先分析后开发的强制约束方法论库。用户要启用本库、按本库方法论工作、或触发任一子能力（init / product-analysis / dev / guard 等）时加载。
 ---
 
 # code-compass
 
-个人 skill 库与 CLI，提供一套 spec 驱动、状态机编排的开发方法论。
+个人 skill 库，提供一套 spec 驱动、状态机编排的开发方法论。
 **方法论是默认硬约束**：动手写代码前必须先经 `product-analysis` 生成已确认 spec，
-`code-compass guard` 会在阶段不符时拦截偏离。
+`guard` 子 skill 会在阶段不符时拦截偏离。
 
 ## 安装与启用
 
-本 skill 通过 skills 注册表分发，安装后完整工具位于 `~/.agents/skills/code-compass/`：
+本 skill 通过 skills 注册表分发。安装后把本仓库放进 agent 的 skills 目录即可用，无需配置 shell 或 python3：
 
 ```bash
 npx skills add rongmazhong/code-compass
-# 让 code-compass 命令可用（二选一，本工具不创建任何软链）：
-#   a) alias 到 shell 配置：  alias code-compass="$HOME/.agents/skills/code-compass/code-compass"
-#   b) 或加入 PATH：          export PATH="$HOME/.agents/skills/code-compass:$PATH"
-code-compass using-code-compass      # 校验安装并完成当前项目初始化
 ```
 
-## 核心命令
+安装后加载 `using-code-compass` 子 skill 完成当前项目初始化（其散文会指示 agent 调 `bash scripts/use.sh`）。
 
-| 命令 | skill 指引 | 作用 |
-|------|-----------|------|
-| `using-code-compass` | `skills/using-code-compass/SKILL.md` | 注册并启用库（校验已全局安装，并确保项目已 init） |
-| `init` | `skills/init/SKILL.md` | 初始化 `.harness/`（含 state/rules/openspec），注入 AGENTS.md |
-| `product-analysis` | `skills/product-analysis/SKILL.md` | 柏拉图式发问 → 需求范围 → spec 文档（`--track` 档位 / `--append` / `--force`） |
-| `dev` / `develop` | `skills/dev/SKILL.md` | 基于 spec 的开发实现（自动 git worktree 隔离） |
-| `worktree [list\|prune]` | `skills/worktree/SKILL.md` | 管理开发用 git worktree |
-| `vapd [ID]` | `skills/vapd/SKILL.md` | 记录/查看 VAPD 标识（VR需求/VB缺陷/VT任务） |
-| `commit <type> <描述>` | `skills/commit/SKILL.md` | 按 `<type>: #{VAPD_ID}#<描述>` 规范提交（含阶段校验） |
-| `status [activate]` | `skills/status/SKILL.md` | 查看状态 / 激活当前阶段自动化流程 |
-| `guard` | `skills/guard/SKILL.md` | 闸门校验：当前阶段是否允许动手，偏离则拦截 |
-| `wiki [topic]` | `skills/wiki/SKILL.md` | 更新/重建项目 wiki（docs/） |
-| `qa` | `skills/qa/SKILL.md` | 自动化 QA（跑 rules/workflow.md 的"测试/静态检查"），implemented→verified |
-| `verify` | `skills/qa/SKILL.md` | spec 覆盖闸门：核对 Requirement 与 tasks.md 勾选 |
-| `review` | `skills/qa/SKILL.md` | 生成代码审查包（diff / Requirement / 清单） |
+## 意图 → 子 skill
+
+agent 按用户意图直接加载对应子 `SKILL.md`（需要机械操作时由子 skill 散文指示调 `scripts/*.sh`）：
+
+| 用户意图 | 子 skill | 机械操作 |
+|----------|----------|----------|
+| 启用库 / 接入项目 / 初始化 | `using-code-compass` | `bash scripts/use.sh` |
+| 初始化 `.harness/` 运行基座 | `init` | `bash scripts/init-harness.sh` |
+| 新功能 / 需求分析 / 出方案 | `product-analysis` | `bash scripts/product-analysis.sh` |
+| 按 spec 开发 / 进入开发 | `dev` | 开头 `bash scripts/guard.sh` + `bash scripts/worktree.sh` |
+| 管理 git worktree | `worktree` | `bash scripts/worktree.sh` |
+| 记录/查看 VAPD 标识 | `vapd` | `bash scripts/vapd.sh` |
+| 按规范提交 | `commit` | `bash scripts/commit.sh` |
+| 查看状态 / 激活续跑 / 闸门 | `status` | `bash scripts/status.sh` |
+| 阶段闸门校验 | `guard` | `bash scripts/guard.sh` |
+| 更新项目 wiki | `wiki` | `bash scripts/wiki.sh` |
+| 跑 QA / 验证覆盖 / 代码评审 | `qa` | `bash scripts/qa.sh` / `verify.sh` / `review.sh` |
+| 刷新 harness 配置 | `upgrade` | `bash scripts/upgrade.sh` |
 
 ## 使用方式
 
 方法论是**默认硬约束**：任何代码改动意图，先走 `product-analysis → planned → dev` 阶段机，
-未生成 spec 不得直接编码。agent 加载本 skill 后，依据用户意图选择对应子命令：
-- 新建/接入项目 → `init`（注入强制约束、引导补全 overview、生成 rules/guard.md）
-- 需求不明确 / 用户说"新功能、做客户端、实现 X" → `product-analysis`（柏拉图式发问；`--track` 选档位、`--append` 抽离澄清、`--force` 省交互）
-- 动手前闸门校验 → `guard`（偏离会拦截，exit 非 0）
-- 已有 spec 要落地 → `dev`（阶段未到 planned 会被拦截，可用 `dev --force` 豁免）
-- 实现完成后的质量关 → `qa`（跑测试/静态检查→verified）→ `verify`（spec 覆盖闸门）→ `review`（审查包）
+未生成 spec 不得直接编码。agent 加载本 skill 后，依据用户意图加载对应子 skill：
+- 新建/接入项目 → 加载 `init` 子 skill（注入强制约束、引导补全 overview、生成 rules/guard.md）
+- 需求不明确 / 用户说"新功能、做客户端、实现 X" → 加载 `product-analysis` 子 skill（柏拉图式发问；`--track` 选档位、`--append` 抽离澄清、`--force` 省交互）
+- 动手前闸门校验 → 加载 `guard` 子 skill（偏离会拦截，exit 非 0）
+- 已有 spec 要落地 → 加载 `dev` 子 skill（阶段未到 planned 会被拦截，可用 `bash scripts/dev.sh --force` 豁免）
+- 实现完成后的质量关 → 加载 `qa` 子 skill（跑测试/静态检查→verified）→ verify（spec 覆盖闸门）→ review（审查包）
 
-每个子命令的详细方法论见 `skills/<name>/SKILL.md`。阶段进度统一维护在
+每个子能力的详细方法论见 `skills/<name>/SKILL.md`。阶段进度统一维护在
 `.harness/state/workflow-state.json`，阶段链：
 `idea → product-analysis → planned → dev → implemented → qa → verified → reviewed → summary`。
 

@@ -85,14 +85,14 @@ _stage_cmd() {
   local st="$1" track="${2:-standard}" slug="${3:-<slug>}"
   local pair
   case "$st" in
-    idea)              pair="product-analysis|code-compass product-analysis <name>" ;;
-    product-analysis)  pair="planned|code-compass status   # 确认 spec 就绪" ;;
-    planned)           pair="dev|code-compass dev $slug" ;;
-    dev|implemented)   pair="verified|code-compass qa" ;;
-    qa)                pair="verified|code-compass verify" ;;
-    verified)          pair="reviewed|code-compass review" ;;
-    reviewed)          pair="summary|code-compass wiki" ;;
-    summary)           echo "# 流程已收尾，可运行 code-compass wiki 更新文档"; return ;;
+    idea)              pair="product-analysis|bash scripts/product-analysis.sh <name>" ;;
+    product-analysis)  pair="planned|bash scripts/status.sh   # 确认 spec 就绪" ;;
+    planned)           pair="dev|bash scripts/dev.sh $slug" ;;
+    dev|implemented)   pair="verified|bash scripts/qa.sh" ;;
+    qa)                pair="verified|bash scripts/verify.sh" ;;
+    verified)          pair="reviewed|bash scripts/review.sh" ;;
+    reviewed)          pair="summary|bash scripts/wiki.sh" ;;
+    summary)           echo "# 流程已收尾，可运行 bash scripts/wiki.sh 更新文档"; return ;;
     *)                 echo "# 未知阶段 '$st'"; return ;;
   esac
   local target="${pair%%|*}" cmd="${pair#*|}"
@@ -110,7 +110,7 @@ _stage_action() {
   case "$st" in
     idea)
       cat <<'ACT'
-  ▶ 下一步：运行 `code-compass product-analysis <name>` 进入需求分析。
+  ▶ 下一步：运行 `bash scripts/product-analysis.sh <name>` 进入需求分析。
   ▶ agent 应加载 skills/product-analysis/SKILL.md，按柏拉图式发问收敛需求范围。
 ACT
       ;;
@@ -118,12 +118,12 @@ ACT
       cat <<'ACT'
   ▶ 当前：需求分析进行中。agent 应继续加载 skills/product-analysis/SKILL.md，
     将对话结论写入 .harness/openspec/changes/<slug>/{proposal.md,specs/,tasks.md}，
-    完成后把 stage 推进到 planned，再运行 `code-compass dev <slug>`。
+     完成后把 stage 推进到 planned，再运行 `bash scripts/dev.sh <slug>`。
 ACT
       ;;
     planned)
       cat <<'ACT'
-  ▶ 下一步：运行 `code-compass dev <slug>` 进入计划拆解与实现。
+  ▶ 下一步：运行 `bash scripts/dev.sh <slug>` 进入计划拆解与实现。
   ▶ 参考 develop-workflow-rong 的 PLANNED→DEVELOPING 编排（writing-plans → TDD → 子代理）。
 ACT
       ;;

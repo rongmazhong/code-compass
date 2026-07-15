@@ -19,7 +19,7 @@ cmd_init() {
 # code-compass 决策与澄清记录
 
 > 追加式单文件，合并原 decision-log / 用户偏好 / 决策记录。
-> 追加命令：code-compass product-analysis --append "你的澄清/决策"
+> 追加命令：bash scripts/product-analysis.sh --append "你的澄清/决策"
 ISSUES
   fi
   # 写入初始工作流状态

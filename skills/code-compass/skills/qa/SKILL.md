@@ -1,7 +1,7 @@
 ---
 name: qa
 description: >
-   自动化 QA 三连（qa / verify / review），按阶段推进状态机。运行 `code-compass qa` / `verify` / `review` 或说"跑 QA / 验证覆盖 / 代码评审"时触发。
+    自动化 QA 三连（qa / verify / review），按阶段推进状态机。用户说「跑 QA / 验证覆盖 / 代码评审 / 做代码审查」或活跃变更处于 implemented 及之后阶段时加载。
 ---
 
 # qa / verify / review —— 状态机推进的 QA 自动化
@@ -12,7 +12,7 @@ description: >
 
 ## 触发条件
 
-- 用户运行 `code-compass qa` / `code-compass verify` / `code-compass review`
+- 用户加载 `qa` 子 skill（其散文会指示 agent 调 `bash scripts/qa.sh` / `bash scripts/verify.sh` / `bash scripts/review.sh`）
 - 用户说"跑 QA"、"验证 spec 覆盖"、"做代码评审"
 - 活跃变更处于 `implemented` 及之后阶段
 
@@ -23,7 +23,7 @@ description: >
 
 ---
 
-### `code-compass qa` —— 自动化 QA（implemented → verified）
+### `qa` 子 skill 调 `bash scripts/qa.sh` —— 自动化 QA（implemented → verified）
 
 1. 读取活跃变更。
 2. 从 `.harness/rules/workflow.md` 解析"测试"与"静态检查"两条命令
@@ -36,7 +36,7 @@ description: >
 > 关键：qa 只认 `rules/workflow.md` 里真实配置的检查命令，不臆造；
 > 命令缺失或失败时**硬停**，避免"假绿"推进。
 
-### `code-compass verify` —— spec 覆盖闸门（reviewed 前的可勾选校验）
+### `qa` 子 skill 调 `bash scripts/verify.sh` —— spec 覆盖闸门（reviewed 前的可勾选校验）
 
 1. 统计活跃变更 `specs/<cap>/spec.md` 中的 `### Requirement:` 条数。
 2. 统计 `tasks.md` 中已勾选 `- [x]` 的条数。
@@ -45,7 +45,7 @@ description: >
 
 > 这是 `verified → reviewed` 之间的覆盖闸门：先 `verify` 确认每条需求都落到勾选任务，再 `review`。
 
-### `code-compass review` —— 生成审查包（reviewed → summary 的素材）
+### `qa` 子 skill 调 `bash scripts/review.sh` —— 生成审查包（reviewed → summary 的素材）
 
 1. 打印**代码变更统计**（`git diff --stat`）。
 2. 列出 spec 的 `### Requirement:` 清单。
@@ -63,8 +63,8 @@ description: >
 
 | 当前 stage | 推进命令 | 目标 stage |
 |------------|----------|------------|
-| `implemented` | `qa` | `verified` |
-| `verified` | `verify`（覆盖闸门）+ `review`（审查包） | `reviewed` |
+| `implemented` | 加载 `qa` 子 skill 调 `bash scripts/qa.sh` | `verified` |
+| `verified` | 加载 `qa` 子 skill 调 `bash scripts/verify.sh`（覆盖闸门）+ `bash scripts/review.sh`（审查包） | `reviewed` |
 | `reviewed` | 评审通过（summary 阶段总结） | `summary` |
 
 - `qa` 失败或命令缺失：**硬停**，绝不带病推进。

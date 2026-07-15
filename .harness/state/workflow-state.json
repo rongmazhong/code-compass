@@ -1,6 +1,6 @@
 {
   "tool": "x",
-  "active": "cc-upgrade",
+  "active": "skill-native-redesign",
   "changes": {
     "cc-upgrade": {
       "stage": "verified",
@@ -21,6 +21,17 @@
       "vapd_id": "",
       "updated_at": "",
       "completed": []
+    },
+    "skill-native-redesign": {
+      "stage": "verified",
+      "branch": "feat/skill-native-redesign",
+      "track": "refactor",
+      "vapd_id": "",
+      "updated_at": "2026-07-15T10:27:18Z",
+      "completed": [
+        "product-analysis",
+        "dev"
+      ]
     }
   }
 }
