@@ -1645,50 +1645,249 @@ cmd_qa() {
 }
 
 # --- cmd_verify ---
+# 四维结构化验证：spec 覆盖 / 测试状态 / 文档同步 / 提交规范
 cmd_verify() {
   local active; active="$(_state_active)"
   [ -z "$active" ] && { warn "无活跃变更，无法 verify"; return 1; }
-  local spec_dir="$TARGET_DIR/.harness/openspec/changes/$active/specs"
-  local tasks="$TARGET_DIR/.harness/openspec/changes/$active/tasks.md"
-  local n_req=0 n_done=0
+  local change_dir="$TARGET_DIR/.harness/openspec/changes/$active"
+  local spec_dir="$change_dir/specs"
+  local tasks="$change_dir/tasks.md"
+  local fail=0
+
+  echo ""
+  echo "📋 多维验证（变更: $active）"
+  echo "────────────────────────────"
+
+  # 维 1：spec 覆盖（Requirement → test 映射行）
+  echo "① spec 覆盖（Requirement → test 映射）"
+  local reqs=0 unmapped=0
   if [ -d "$spec_dir" ]; then
-    n_req="$(grep -rhoE '^### Requirement:' "$spec_dir" 2>/dev/null | wc -l | tr -d ' ')"
+    while IFS= read -r r; do
+      [ -z "$r" ] && continue
+      reqs=$((reqs+1))
+      local rname="${r#### Requirement: }"
+      if [ -f "$tasks" ] && grep -qiE "Requirement:[[:space:]]*${rname}[[:space:]]*→[[:space:]]*test:" "$tasks"; then
+        echo "   ✅ $rname —— 有测试映射"
+      else
+        warn "   ⚠️  $rname —— 无 test 映射（tasks.md 需加 'Requirement: <name> → test: <path>'）"
+        unmapped=$((unmapped+1)); fail=1
+      fi
+    done < <(grep -rhoE '^### Requirement:.*' "$spec_dir" 2>/dev/null)
   fi
-  [ -f "$tasks" ] && n_done="$(grep -cE '^[[:space:]]*- \[x\]' "$tasks" 2>/dev/null | tr -d ' ')"
-  echo "📋 覆盖度核对（变更: $active）"
-  echo "  spec Requirements : $n_req"
-  echo "  tasks.md 已勾选   : $n_done"
-  if [ "$n_req" -gt "$n_done" ]; then
-    warn "⚠️  存在未覆盖需求：$(($n_req - $n_done)) 条未勾选对应任务"
+  [ "$reqs" -eq 0 ] && { warn "   ⚠️  spec 中无 Requirement"; fail=1; }
+  [ "$unmapped" -eq 0 ] && [ "$reqs" -gt 0 ] && echo "   ✅ 全部 Requirement 均有测试映射"
+
+  # 维 2：测试状态（复用 qa 逻辑）
+  echo "② 测试状态（复用 qa）"
+  local tcmd; tcmd="$(_wf_cmd "测试")"; case $? in
+    0) ;;
+    2) warn "   ⚠️  测试命令未配置（rules/workflow.md 占位），跳过"; tcmd="" ;;
+    *) tcmd="" ;;
+  esac
+  if [ -n "$tcmd" ]; then
+    (cd "$TARGET_DIR" && eval "$tcmd") >/dev/null 2>&1 && echo "   ✅ 测试全绿" || { warn "   ❌ 测试失败（退出非 0）"; fail=1; }
+  else
+    warn "   ⚠️  无可用测试命令，未校验"
+  fi
+
+  # 维 3：文档同步（docs/ 修改时间 vs 代码最近修改）
+  echo "③ 文档同步（docs/ 是否被修改）"
+  if [ -d "$TARGET_DIR/docs" ]; then
+    local docs_mtime code_mtime
+    docs_mtime="$(find "$TARGET_DIR/docs" -type f -printf '%T@\n' 2>/dev/null | sort -n | tail -1)"
+    code_mtime="$(find "$TARGET_DIR" -type f -not -path '*/.git/*' -not -path '*/.harness/*' -not -path '*/docs/*' -printf '%T@\n' 2>/dev/null | sort -n | tail -1)"
+    if [ -n "$docs_mtime" ] && [ -n "$code_mtime" ] && awk "BEGIN{exit !($docs_mtime < $code_mtime - 1)}"; then
+      warn "   ⚠️  docs/ 早于代码修改，可能未同步文档"
+      fail=1
+    else
+      echo "   ✅ docs/ 与代码修改时间一致（或无可比文件）"
+    fi
+  else
+    echo "   ℹ️  无 docs/ 目录，跳过"
+  fi
+
+  # 维 4：提交规范（分支提交是否都带 VAPD）
+  echo "④ 提交规范（VAPD 标识）"
+  local branch; branch="$(git -C "$TARGET_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)"
+  if [ -n "$branch" ] && git -C "$TARGET_DIR" rev-parse --verify "$branch" >/dev/null 2>&1 \
+     && git -C "$TARGET_DIR" rev-list --count "$branch" >/dev/null 2>&1; then
+    local ncommits; ncommits="$(git -C "$TARGET_DIR" rev-list --count "$branch" 2>/dev/null || echo 0)"
+    if [ "${ncommits:-0}" -eq 0 ]; then
+      echo "   ℹ️  分支尚无提交，跳过"
+    else
+      local bad; bad="$(git -C "$TARGET_DIR" log --no-merges --grep='#VR\|#VB\|#VT' --invert-grep --format='%h %s' "$branch" 2>/dev/null | grep -vE '^$' || true)"
+      if [ -n "$bad" ]; then
+        warn "   ⚠️  存在未携带 VAPD 的提交："
+        printf '%s\n' "$bad" | sed 's/^/      /'
+        fail=1
+      else
+        echo "   ✅ 分支提交均携带 VAPD 标识"
+      fi
+    fi
+  else
+    echo "   ℹ️  非 git 分支或无可比提交，跳过"
+  fi
+
+  echo "────────────────────────────"
+  if [ "$fail" -ne 0 ]; then
+    warn "❌ 验证存在失败维度（见上方 ⚠️/❌）"
     return 1
   fi
-  log "✅ 所有 Requirement 均有对应已勾选任务"
+  log "✅ 四维验证全部通过"
 }
 
-# --- cmd_review ---
+# ---------------------------------------------------------------------------
+# review 多视角审查链（零依赖，纯 grep/静态检查）
+# 四个视角：product / eng / security / design
+# 每个 cmd_review_* 打印该视角结果，返回 0=通过 1=致命问题 2=无 spec 跳过
+# 注意：为规避 set -o pipefail 下 `cmd | grep -q` 引发的 SIGPIPE，
+# 统一用全局 _REVIEW_DIFF + `grep ... <<< "$_REVIEW_DIFF"`（非管道，不会断管）。
+# ---------------------------------------------------------------------------
+
+# 取活跃变更的 diff 文本（工作区 vs HEAD，含已暂存），存入全局变量
+_review_diff() {
+  _REVIEW_DIFF="$(git -C "$TARGET_DIR" diff --stat 2>/dev/null; git -C "$TARGET_DIR" diff HEAD 2>/dev/null)"
+  export _REVIEW_DIFF
+}
+
+# product 视角：逐条 SHALL 对齐（顾问性检查，不阻断推进）
+# 说明：实现 diff 中通常不含 spec Requirement 的 kebab 名原文，纯文本匹配误报率高，
+# 故本视角仅做"弱信号"提示（命中则 ✅，未命中则 ℹ️ 提示人工确认），永不返回致命。
+cmd_review_product() {
+  local active="$1"
+  local spec_dir="$TARGET_DIR/.harness/openspec/changes/$active/specs"
+  echo ""
+  echo "🔍 [product] 对齐 spec 的每一条 SHALL（顾问性，不阻断）"
+  if [ ! -d "$spec_dir" ]; then
+    warn "   ⚠️  未找到 specs/，product 视角跳过（请先生成 spec）"
+    return 2
+  fi
+  local reqs; reqs="$(grep -rhoE '^### Requirement:.*' "$spec_dir" 2>/dev/null)"
+  [ -z "$reqs" ] && { warn "   ⚠️  spec 中无 Requirement，product 视角跳过"; return 2; }
+  _review_diff
+  local name
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    name="${line#### Requirement: }"
+    local kw; kw="$(printf '%s' "$name" | tr ' ' '-' | tr '[:upper:]' '[:lower:]')"
+    if grep -qiE "(\b${kw}\b|${name})" <<< "$_REVIEW_DIFF"; then
+      echo "   ✅ $name —— diff 中可见相关改动"
+    else
+      log "   ℹ️  $name —— 未在 diff 文本直接命中（实现通常以函数/命令名呈现，请人工确认是否对齐）"
+    fi
+  done <<< "$reqs"
+  return 2
+}
+
+# eng 视角：N+1 / 竞态 / 信任边界 / 错误处理降级（粗粒度高置信模式）
+# 说明：本视角为顾问性检查（⚠️ 提示），用于人工复核提示，不阻断推进。
+cmd_review_eng() {
+  local active="$1"
+  echo ""
+  echo "🔍 [eng] 架构与健壮性（N+1 / 竞态 / 信任边界 / 降级，顾问性）"
+  _review_diff
+  # N+1：循环内出现查询调用（for/while 体内含 .find/.query/.get( 等）
+  if grep -qE '^\+[[:space:]]*(for|while)[[:space:]]' <<< "$_REVIEW_DIFF" \
+     && grep -qE '^\+.*\.(find|query|select|get)\(' <<< "$_REVIEW_DIFF"; then
+    warn "   ⚠️  疑似循环内查询（潜在 N+1），需人工确认"
+  fi
+  # 竞态：裸共享状态写且无锁
+  if grep -qE '^\+.*(global |volatile|sharedState|Mutex|lock)' <<< "$_REVIEW_DIFF"; then
+    log "   ℹ️  检测到共享状态/锁关键字，请确认竞态保护是否完备"
+  fi
+  # 信任边界：外部输入未校验直接用于命令/路径
+  if grep -qE '^\+.*(eval|exec|os\.system|subprocess).*[a-zA-Z_]*(input|req|param|argv)' <<< "$_REVIEW_DIFF"; then
+    warn "   ⚠️  外部输入直接流入命令执行（信任边界），需人工确认校验"
+  fi
+  # 错误处理降级：新增 try 但无 except/fallback
+  if grep -qE '^\+.*try:' <<< "$_REVIEW_DIFF" \
+     && ! grep -qE '^\+.*(except|finally|catch)' <<< "$_REVIEW_DIFF"; then
+    warn "   ⚠️  try 块无 except/finally 降级处理"
+  fi
+  echo "   ✅ 未命中高置信致命模式（以上 ⚠️ 为人工复核提示，不阻断推进）"
+  return 0
+}
+
+# security 视角：硬编码密钥 / 注入 / 不安全反序列化 / 访问控制
+# 仅硬编码密钥（❌ 高置信）为致命、阻断推进；其余 ⚠️ 为人工复核提示。
+cmd_review_security() {
+  local active="$1"
+  echo ""
+  echo "🔍 [security] 硬编码密钥 / 注入 / 反序列化 / 访问控制"
+  _review_diff
+  local rc=0
+  # 硬编码密钥（高置信：赋值给 secret/password/api_key/token 且值非占位）
+  if grep -qE '^\+.*(secret|password|passwd|api[_-]?key|access[_-]?token|private[_-]?key)[[:space:]]*[:=][[:space:]]*["'\'']?[A-Za-z0-9/+=_\-]{12,}' <<< "$_REVIEW_DIFF"; then
+    warn "   ❌ 命中疑似硬编码密钥/令牌（高置信），必须移除并改用环境变量"
+    rc=1
+  fi
+  # 不安全反序列化
+  if grep -qE '^\+.*(pickle\.load|yaml\.load\(|eval\()' <<< "$_REVIEW_DIFF"; then
+    warn "   ⚠️  使用不安全反序列化/ eval（pickle/yaml.load/eval），需人工确认输入可信"
+  fi
+  # SQL 注入：字符串拼接进查询
+  if grep -qE '^\+.*(execute|raw|cursor)\(.*\+.*(SELECT|INSERT|UPDATE|DELETE)' <<< "$_REVIEW_DIFF"; then
+    warn "   ⚠️  疑似 SQL 字符串拼接（注入风险），需参数化"
+  fi
+  # 访问控制：新增路由/接口无鉴权注解
+  if grep -qE '^\+.*(route|app\.(get|post|put|delete)|@(Get|Post|Put|Delete)Mapping)' <<< "$_REVIEW_DIFF" \
+     && ! grep -qiE '^\+.*(auth|guard|permission|@Secured|requireAuth)' <<< "$_REVIEW_DIFF"; then
+    warn "   ⚠️  新增接口/路由未观察到鉴权声明，需人工确认访问控制"
+  fi
+  [ "$rc" -eq 0 ] && echo "   ✅ 未命中高置信安全问题模式"
+  return $rc
+}
+
+# design 视角：UI 一致性清单（仅清单，不自动修复）
+cmd_review_design() {
+  local active="$1"
+  echo ""
+  echo "🔍 [design] 体验与一致性（清单式，需人工确认）"
+  _review_diff
+  # 新增前端文件
+  if grep -qE '^\+.*\.(tsx|jsx|vue|svelte|css|html)' <<< "$_REVIEW_DIFF"; then
+    log "   ℹ️  检测到前端/样式改动，请核对："
+    echo "      - 是否复用项目 design token / 间距规范（避免魔法数字）"
+    echo "      - 是否覆盖 loading / empty / error 三态"
+    echo "      - 交互反馈（hover/disabled/focus）是否一致"
+    echo "      - 是否通过 e2e（agent-browser）验证（见 qa）"
+  else
+    echo "   ✅ 未检测到 UI 改动，design 视角无需关注"
+  fi
+  return 0
+}
+
+# --- cmd_review（编排入口）---
 cmd_review() {
   local active; active="$(_state_active)"
   [ -z "$active" ] && { warn "无活跃变更，无法 review"; return 1; }
-  local spec_dir="$TARGET_DIR/.harness/openspec/changes/$active/specs"
+  local fatal=0 skip=0
   echo ""
-  echo "📦 审查包（变更: $active）"
+  echo "📦 多视角审查（变更: $active）"
   echo "────────────────────────────"
   echo "▶ 代码变更统计:"
   git -C "$TARGET_DIR" diff --stat 2>/dev/null | sed 's/^/   /'
   echo "▶ spec Requirements:"
+  local spec_dir="$TARGET_DIR/.harness/openspec/changes/$active/specs"
   if [ -d "$spec_dir" ]; then
     grep -rhoE '^### Requirement:.*' "$spec_dir" 2>/dev/null | sed 's/^/   /'
   else
     echo "   （无 spec）"
   fi
-  echo "▶ 审查清单:"
-  echo "   1. 是否对齐 spec 的每一条 Requirement（系统 SHALL ...）"
-  echo "   2. Scenario 是否覆盖正常 + 异常路径"
-  echo "   3. 是否引入硬编码密钥 / 不安全反序列化 / 条件副作用"
-  echo "   4. 测试与 lint 是否全绿（参考 qa 命令）"
-  echo "   5. 文档（docs/、commit 信息）是否同步"
+
+  cmd_review_product "$active" && skip=0 || { case $? in 2) skip=1 ;; *) fatal=1 ;; esac; }
+  if cmd_review_eng "$active"; then :; else fatal=1; fi
+  if cmd_review_security "$active"; then :; else fatal=1; fi
+  cmd_review_design "$active" || true
+
   echo "────────────────────────────"
-  log "审查包已生成（如需跨模型二审，请 agent 加载 review + codex 执行）"
+  if [ "$fatal" -ne 0 ]; then
+    warn "❌ 审查发现致命问题（见上方 ❌/⚠️），阶段不推进"
+    return 1
+  fi
+  # 推进阶段到 reviewed（无致命问题时）
+  _set_stage "$active" "reviewed"
+  log "✅ 多视角审查通过，阶段已推进至 reviewed"
 }
 
 # ---------------------------------------------------------------------------

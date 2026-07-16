@@ -73,3 +73,73 @@ teardown() { rm -rf "$BATS_TMP"; }
   [ "$(jq -r '.mykey' .harness/config.json)" = "keep-me" ]
   [ "$(jq -r '.changes.a.updated_at' .harness/state/workflow-state.json)" != "null" ]
 }
+
+# review 多视角链：编排四视角并推进到 reviewed
+@test "review runs multi-perspective and advances to reviewed" {
+  cc init-harness >/dev/null 2>&1
+  mkdir -p .harness/openspec/changes/a/specs/core
+  cat > .harness/openspec/changes/a/specs/core/spec.md <<'EOF'
+## ADDED Requirements
+### Requirement: auth-login
+系统 SHALL 提供登录。
+#### Scenario: 正常
+- **WHEN** 登录
+- **THEN** 成功
+EOF
+  printf -- '- [x] 实现 auth-login\n' > .harness/openspec/changes/a/tasks.md
+  echo "def login():" > auth.py && git add auth.py
+  jq -n '{tool:"x",active:"a",changes:{a:{stage:"verified",branch:"",track:"standard",vapd_id:"",updated_at:"",completed:[]}}}' > .harness/state/workflow-state.json
+  cc review >/dev/null 2>&1
+  [ "$(jq -r '.changes.a.stage' .harness/state/workflow-state.json)" = "reviewed" ]
+}
+
+# review security 命中硬编码密钥时阻断推进
+@test "review blocks advance on hardcoded secret" {
+  cc init-harness >/dev/null 2>&1
+  mkdir -p .harness/openspec/changes/a/specs/core
+  echo "## ADDED Requirements" > .harness/openspec/changes/a/specs/core/spec.md
+  echo "api_key = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\"" > secret.py && git add secret.py
+  jq -n '{tool:"x",active:"a",changes:{a:{stage:"verified",branch:"",track:"standard",vapd_id:"",updated_at:"",completed:[]}}}' > .harness/state/workflow-state.json
+  ! cc review >/dev/null 2>&1
+  [ "$(jq -r '.changes.a.stage' .harness/state/workflow-state.json)" = "verified" ]
+}
+
+# review 子脚本可独立运行单视角
+@test "review-product.sh runs single perspective" {
+  cc init-harness >/dev/null 2>&1
+  mkdir -p .harness/openspec/changes/a/specs/core
+  echo "## ADDED Requirements" > .harness/openspec/changes/a/specs/core/spec.md
+  jq -n '{tool:"x",active:"a",changes:{a:{stage:"verified",branch:"",track:"standard",vapd_id:"",updated_at:"",completed:[]}}}' > .harness/state/workflow-state.json
+  cc review-product; [ "$status" -eq 0 ]
+}
+
+# verify 四维：mapping 缺失时失败
+@test "verify fails when requirement lacks test mapping" {
+  cc init-harness >/dev/null 2>&1
+  mkdir -p .harness/openspec/changes/a/specs/core
+  cat > .harness/openspec/changes/a/specs/core/spec.md <<'EOF'
+## ADDED Requirements
+### Requirement: feat-x
+系统 SHALL 做 x。
+EOF
+  printf -- '- [x] 实现 feat-x\n' > .harness/openspec/changes/a/tasks.md
+  printf '# 开发流程\n- 测试：true\n- 静态检查：true\n' > .harness/rules/workflow.md
+  jq -n '{tool:"x",active:"a",changes:{a:{stage:"verified",branch:"",track:"standard",vapd_id:"",updated_at:"",completed:[]}}}' > .harness/state/workflow-state.json
+  ! cc verify >/dev/null 2>&1
+}
+
+# verify 四维：mapping 完整且测试绿时通过
+@test "verify passes with full mapping and green tests" {
+  cc init-harness >/dev/null 2>&1
+  mkdir -p .harness/openspec/changes/a/specs/core
+  cat > .harness/openspec/changes/a/specs/core/spec.md <<'EOF'
+## ADDED Requirements
+### Requirement: feat-x
+系统 SHALL 做 x。
+EOF
+  printf -- '- [x] 实现 feat-x\n- Requirement: feat-x → test: tests/x.bats\n' > .harness/openspec/changes/a/tasks.md
+  printf '# 开发流程\n- 测试：true\n- 静态检查：true\n' > .harness/rules/workflow.md
+  echo "x" > tests_x.bats
+  jq -n '{tool:"x",active:"a",changes:{a:{stage:"verified",branch:"",track:"standard",vapd_id:"",updated_at:"",completed:[]}}}' > .harness/state/workflow-state.json
+  cc verify >/dev/null 2>&1
+}

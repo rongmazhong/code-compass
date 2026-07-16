@@ -36,6 +36,28 @@ description: >
 > 关键：qa 只认 `rules/workflow.md` 里真实配置的检查命令，不臆造；
 > 命令缺失或失败时**硬停**，避免"假绿"推进。
 
+### 前端 web 工程的浏览器端到端（agent-browser 集成）
+
+`qa` **不新增任何 label**，完全复用 `rules/workflow.md` 里的"测试"命令。
+当项目是**前端 web 工程**时，建议在"测试"命令中配置由 `agent-browser`
+驱动的端到端脚本（或 `npx playwright test`），这样 `qa` 执行该命令时浏览器测试
+自然被纳入，**无需改动 qa 机制本身**。
+
+识别前端 web 工程的信号（命中其一即可）：
+- 根目录含 `package.json` 且依赖含 `react` / `vue` / `svelte` / `next` / `vite` 等
+- 存在 `index.html` / `vite.config.*` / `next.config.*`
+
+引导做法（agent 在 web 项目时应建议用户配置）：
+1. 在 `rules/workflow.md` 的"测试"行指向 e2e 脚本，例如：
+   `- 测试：npx agent-browser run e2e/ 或 npx playwright test`
+2. 保持"静态检查"行指向项目的 lint。
+3. 运行 `bash scripts/qa.sh` —— 浏览器测试随"测试"命令一并执行。
+4. 浏览器测试产出（截图/报告）由 e2e 工具落盘，agent 用 `gstack browse`
+   类能力做视觉复核。
+
+> 边界：code-compass 不内置浏览器、不引入外部依赖；浏览器测试是否执行
+> 完全取决于"测试"命令的配置。未配置时 `qa` 行为与原来一致（仅跑既有测试/lint）。
+
 ### `qa` 子 skill 调 `bash scripts/verify.sh` —— spec 覆盖闸门（reviewed 前的可勾选校验）
 
 1. 统计活跃变更 `specs/<cap>/spec.md` 中的 `### Requirement:` 条数。
@@ -45,17 +67,22 @@ description: >
 
 > 这是 `verified → reviewed` 之间的覆盖闸门：先 `verify` 确认每条需求都落到勾选任务，再 `review`。
 
-### `qa` 子 skill 调 `bash scripts/review.sh` —— 生成审查包（reviewed → summary 的素材）
+### `qa` 子 skill 调 `bash scripts/review.sh` —— 多视角审查链（reviewed 推进）
+
+`review` 不再是静态清单，而是依次执行四个视角的可执行审查链：
 
 1. 打印**代码变更统计**（`git diff --stat`）。
 2. 列出 spec 的 `### Requirement:` 清单。
-3. 打印**审查清单**：
-   - 是否对齐 spec 每一条 Requirement（`SHALL` …）
-   - Scenario 是否覆盖正常 + 异常路径
-   - 是否引入硬编码密钥 / 不安全反序列化 / 条件副作用
-   - 测试与 lint 是否全绿（参考 `qa`）
-   - 文档（`docs/`、`commit` 信息）是否同步
-4. 生成审查包后**不自动推进**——由 agent / 人工评审决定 `summary` 推进。
+3. 依次执行四个视角：
+   - **[product]** 逐条 `### Requirement:` 是否在 diff 中观察到对应实现
+   - **[eng]** N+1 / 竞态 / 信任边界 / 错误处理降级（高置信模式）
+   - **[security]** 硬编码密钥 / 注入 / 不安全反序列化 / 访问控制
+   - **[design]** UI 一致性清单（仅清单，需人工确认）
+4. 任一视角命中致命问题（❌/⚠️ 高置信）→ **不推进**并退出非 0。
+5. 全部通过 → 阶段自动推进至 `reviewed`，打印 `✅ 多视角审查通过`。
+
+> 模糊项标注"需人工确认"而非断言失败；design 视角永不阻断推进。
+> 多视角脚本可独立运行：`bash scripts/review-product.sh` 等（仅该视角报告）。
 
 ---
 
