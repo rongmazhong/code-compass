@@ -1,6 +1,6 @@
 {
   "tool": "x",
-  "active": "skill-layout-cleanup",
+  "active": "review-verify-qa-upgrade",
   "changes": {
     "cc-upgrade": {
       "stage": "verified",
@@ -52,6 +52,19 @@
         "summary",
         "verified"
       ]
+    },
+    "review-verify-qa-upgrade": {
+      "stage": "summary",
+      "updated_at": "2026-07-16T08:45:30Z",
+      "completed": [
+        "dev",
+        "product-analysis",
+        "reviewed",
+        "summary",
+        "verified"
+      ],
+      "track": "standard+",
+      "branch": "feat/review-verify-qa-upgrade"
     }
   }
 }
