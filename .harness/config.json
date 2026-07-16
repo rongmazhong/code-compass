@@ -1,6 +1,6 @@
 {
   "tool": "code-compass",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "skills_dir": "skills",
   "spec_dir": ".harness/openspec",
   "docs_dir": "docs",
